@@ -224,9 +224,8 @@ CTEST(stunclient, WaitBindRespNotAut_Timeout)
     ASSERT_TRUE (stunResult == StunResult_Empty);
     StunClient_Alloc(&stunInstance);
     sockaddr_initFromString((struct sockaddr*)&stunServerAddr, "193.200.93.152:3478");
-    int ctx;
-
-    ctx = StartBindTransaction(0);
+    
+    StartBindTransaction(0);
     /* 1 Tick */
     StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
     ASSERT_TRUE (stunResult == StunResult_Empty);
@@ -254,8 +253,7 @@ CTEST (stunclient, WaitBindRespNotAut_BindSuccess)
     StunClient_Alloc(&stunInstance);
     sockaddr_initFromString((struct sockaddr*)&stunServerAddr, "193.200.93.152:3478");
    
-    int ctx;
-    ctx = StartBindTransaction(0);
+    StartBindTransaction(0);
     StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
 
     SimBindSuccessResp(runningAsIPv6, true);
@@ -267,8 +265,7 @@ CTEST (stunclient, WaitBindRespNotAut_BindError)
 {
     StunClient_Alloc(&stunInstance);
     sockaddr_initFromString((struct sockaddr*)&stunServerAddr, "193.200.93.152:3478");
-    int ctx;
-    ctx = StartBindTransaction(0);
+    StartBindTransaction(0);
     StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
 
     SimBindSuccessResp(runningAsIPv6, false);
@@ -322,9 +319,7 @@ CTEST (stunclient, Send_Discuss)
 {
     StunClient_Alloc(&stunInstance);
     sockaddr_initFromString((struct sockaddr*)&stunServerAddr, "193.200.93.152:3478");
-    
-    int ctx;
-    ctx = StartDiscussBindTransaction(0);
+    StartDiscussBindTransaction(0);
     StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
 
     SimBindSuccessResp(runningAsIPv6, true);
