@@ -14,6 +14,7 @@ endfunction()
 
 sa_test ( testvector )
 sa_test ( realworldpackets )
+sa_test ( stunclient )
 
 
 include ( CTest )
