@@ -1,0 +1,77 @@
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+#Automake with driends
+*.m4
+build-aux/*
+*.guess
+config.h
+config.h.in
+*.log
+*.status
+configure
+libtool
+Makefile
+stamp-h1
+autom4te.cache/*
+.libs
+
+#coverage report files
+*.gcno
+
+#tmp files
+*~
+*#
+.#*
+
+*.Plo
+*.Po
+*.lai
+*.sub
+*.trs
+.deps/
+.dirstamp
+
+
+cscope.files
+build
+*.make
+*.pc
+.DS_Store
+
+
+
