@@ -8,6 +8,8 @@ set ( stunlib_srcs
       turnclient.c
 )
 
+set (ADDITIONAL_LIBS "")
+
 add_library ( stunlib SHARED ${stunlib_srcs} )
 target_include_directories ( stunlib PUBLIC ../include )
 target_include_directories ( stunlib PRIVATE ../src )
@@ -23,11 +25,19 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 find_package( ZLIB REQUIRED )
 if ( ZLIB_FOUND )
     include_directories( ${ZLIB_INCLUDE_DIRS} )
-    #target_link_libraries( stunlib ${ZLIB_LIBRARIES} )
+    list(APPEND ADDITIONAL_LIBS ${ZLIB_LIBRARIES})     
 endif( ZLIB_FOUND )
 
+
+find_package( OpenSSL )
+if( OPENSSL_FOUND )
+  include_directories( ${OPENSSL_INCLUDE_DIR} )
+  list(APPEND ADDITIONAL_LIBS ${OPENSSL_LIBRARIES})
+endif( OPENSSL_FOUND )
+
+
 target_link_libraries ( stunlib PRIVATE sockaddrutil 
-                        ${ZLIB_LIBRARIES})
+                        ${ADDITIONAL_LIBS})
 
 if (coveralls)
     include(Coveralls)
