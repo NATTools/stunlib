@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/NPPT/sockaddrutil.svg?branch=master)](https://travis-ci.org/NPPT/sockaddrutil)
-[![Coverage Status](https://coveralls.io/repos/NPPT/sockaddrutil/badge.svg?branch=master)](https://coveralls.io/r/NPPT/sockaddrutil?branch=master)
+[![Build Status](https://travis-ci.org/NPPT/sockaddrutil.svg?branch=master)](https://travis-ci.org/NPPT/stunlib)
+[![Coverage Status](https://coveralls.io/repos/NPPT/stunlib/badge.svg?branch=master)](https://coveralls.io/r/NPPT/stunlib?branch=master)
 
-# Sockaddrutil
-Idea is to make it a little less painfull to work with sockaddr and friends. 
+# stunlib
+STUN and TURN implementation
 
 ## Compiling
 
