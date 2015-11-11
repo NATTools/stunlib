@@ -79,11 +79,13 @@ SendRawStun(int                    sockfd,
             const uint8_t*         buf,
             int                    len,
             const struct sockaddr* addr,
-            bool                   useRelay)
+            bool                   useRelay,
+            uint8_t                ttl)
 {
   (void) sockfd;
   (void) len;
   (void) useRelay;
+  (void) ttl;
   char addr_str[SOCKADDR_MAX_STRLEN];
   /* find the transaction id  so we can use this in the simulated resp */
 

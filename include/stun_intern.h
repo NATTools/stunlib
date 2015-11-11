@@ -5,6 +5,7 @@
 #ifndef STUN_INTERN_H
 #define STUN_INTERN_H
 
+#include <sys/time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +21,7 @@ typedef enum {
   STUN_SIGNAL_BindRespError,
   STUN_SIGNAL_TimerTick,
   STUN_SIGNAL_TimerRetransmit,
+  STUN_SIGNAL_ICMPResp,
   STUN_SIGNAL_DeAllocate,
   STUN_SIGNAL_Cancel,
 
@@ -31,6 +33,8 @@ typedef struct
 {
   struct sockaddr_storage srcAddr;
   StunMessage             stunRespMessage;
+  uint32_t                ICMPtype;
+  uint32_t                ttl;
 }
 StunRespStruct;
 
@@ -58,11 +62,13 @@ typedef struct {
   bool                    useCandidate;
   bool                    iceControlling;
   uint64_t                tieBreaker;
+  uint8_t                 ttl;
   StunMsgId               transactionId;
   uint32_t                sockhandle;
   STUN_SENDFUNC           sendFunc;
   STUNCB                  stunCbFunc;
   DiscussData*            discussData;    /*NULL allowed if none present */
+  bool                    addSoftware;
 } StunBindReqStuct;
 
 struct StunClientStats
@@ -75,6 +81,7 @@ struct StunClientStats
   uint32_t BindRespReceived_InIdle;
   uint32_t BindRespReceived_ViaRelay;
   uint32_t BindRespErrReceived;
+  uint32_t ICMPReceived;
   uint32_t BindReqReceived;
   uint32_t BindReqReceived_ViaRelay;
   uint32_t BindRespSent;
@@ -102,12 +109,25 @@ typedef struct
   struct sockaddr_storage rflxAddr;
 
   /* timers */
-  int32_t TimerRetransmit;
-  int     retransmits;
+  int32_t  TimerRetransmit;
+  uint32_t retransmits;
+
+  /* RTT Info */
+  struct timeval start;
+  struct timeval stop;
+
+  /* icmp */
+  uint32_t ICMPtype;
+  uint32_t ttl;
+
+  /* DISCUSS */
+  bool        hasDiscuss;
+  DiscussData discussData;
 
   struct StunClientStats stats;
 
   STUN_CLIENT_DATA* client;
+
 
 } STUN_TRANSACTION_DATA;
 
@@ -115,6 +135,7 @@ typedef struct
 struct STUN_CLIENT_DATA
 {
   STUN_TRANSACTION_DATA data [MAX_STUN_TRANSACTIONS];
+
 
   /*duplicated for logging on unknown transactions etc.*/
   STUN_INFO_FUNC_PTR     Log_cb;

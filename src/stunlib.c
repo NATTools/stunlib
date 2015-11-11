@@ -1,5 +1,5 @@
 /*
- See LICENSE file.
+ *  See license file
  */
 #include "stunlib.h"
 #if defined(__APPLE__)
@@ -14,6 +14,8 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #endif
+
+
 
 #include <zlib.h>
 
@@ -909,6 +911,25 @@ stunEncodeNetworkStatus(StunAtrNetworkStatus* pNetworkStatus,
   return true;
 }
 
+static bool
+stunEncodeTTL(StunAtrTTL* pTTL,
+              uint8_t**   pBuf,
+              int*        nBufLen)
+{
+  if (*nBufLen < 32)
+  {
+    return false;
+  }
+  write_16(pBuf, STUN_ATTR_TTL);   /* Attr type */
+  write_16(pBuf, 4);                    /* Length */
+  write_8(pBuf, pTTL->ttl);
+  write_8(pBuf, pTTL->pad_8);
+  write_16(pBuf, pTTL->pad_16);
+
+  *nBufLen -= 8;
+  return true;
+}
+
 
 static bool
 stunEncodeCiscoNetworkFeedback(StunAtrCiscoNetworkFeedback* ciscoNetFeed,
@@ -946,7 +967,6 @@ stunEncodeBandwidthUsage(StunAtrBandwidthUsage* pBandwidthUsage,
   *nBufLen -= 8;
   return true;
 }
-
 
 static uint32_t
 stunlib_EncodeIndication(uint8_t                msgType,
@@ -1536,7 +1556,26 @@ stunDecodeBandwidthUsage(StunAtrBandwidthUsage* bandwidthUsageAtr,
   }
   read_16(pBuf, &bandwidthUsageAtr->average);
   read_16(pBuf, &bandwidthUsageAtr->max);
+
   *nBufLen -= 4;
+  return true;
+}
+
+static bool
+stunDecodeTTL(StunAtrTTL*     ttl,
+              const uint8_t** pBuf,
+              int*            nBufLen)
+{
+  if (*nBufLen < 4)
+  {
+    return false;
+  }
+
+  read_8(pBuf, &ttl->ttl);
+  read_8(pBuf, &ttl->pad_8);
+  read_16(pBuf, &ttl->pad_16);
+
+  *nBufLen -= 8;
   return true;
 }
 
@@ -2323,6 +2362,27 @@ stunlib_DecodeMessage(const uint8_t*  buf,
       message->hasReservationToken = true;
       break;
 
+    case STUN_ATTR_TTL:
+      if ( !stunDecodeTTL(&message->ttl,
+                          &pCurrPtr,
+                          &restlen) )
+      {
+        return false;
+      }
+      message->hasTTL = true;
+      break;
+
+    case STUN_ATTR_TTLString:
+      if ( !stunDecodeStringAtr(&message->TTLString,
+                                &pCurrPtr,
+                                &restlen,
+                                sAtr.length) )
+      {
+        return false;
+      }
+      message->hasTTLString = true;
+      break;
+
     case STUN_ATTR_StreamType:
       if ( !stunDecodeStreamType(&message->streamType,
                                  &pCurrPtr,
@@ -2475,10 +2535,9 @@ stunlib_checkIntegrity(const uint8_t* buf,
     unsigned char bufCopy[STUN_MAX_PACKET_SIZE];
     uint16_t      msgIntLength;
     unsigned char hash[20];
-    uint32_t      len; /*dummy value*/
     uint8_t*      pCurrPtr;
-
-    len = 0;
+    unsigned int  len;
+    (void)len;
     /*Lengt of message including integiryty lenght (Header and attribute)
      *  Fingerprint and any trailing attributes are dismissed.
      *  msgIntLength = message->messageIntegrity.offset+24;*/
@@ -2637,6 +2696,10 @@ addFingerPrint (StunMessage* message)
        ||  (type == STUN_MSG_DataIndicationMsg)
        ||  (type == STUN_PathDiscoveryRequestMsg)
        ||  (type == STUN_PathDiscoveryResponseMsg) )
+  {
+    return false;
+  }
+  if (message->hasTTL)
   {
     return false;
   }
@@ -2992,6 +3055,7 @@ stunlib_encodeMessage(StunMessage*   message,
     return 0;
   }
 
+
   if ( message->hasBandwidthUsage &&
        !stunEncodeBandwidthUsage(&message->bandwidthUsage,
                                  &pCurrPtr,
@@ -3000,6 +3064,30 @@ stunlib_encodeMessage(StunMessage*   message,
     if (stream != NULL)
     {
         printError(stream, "Invalid BandwidthUsage attribute\n");
+    }
+    return 0;
+  }
+
+
+  if ( message->hasTTL && !stunEncodeTTL(&message->ttl,
+                                         &pCurrPtr,
+                                         &restlen) )
+  {
+    if (stream != NULL)
+    {
+        printError(stream, "Invalid TTL attribute\n");
+    }
+    return 0;
+  }
+
+  if ( message->hasTTLString && !stunEncodeStringAtr(&message->TTLString,
+                                                     STUN_ATTR_TTLString,
+                                                     &pCurrPtr,
+                                                     &restlen) )
+  {
+    if (stream != NULL)
+    {
+        printError(stream, "Invalid TTLString\n");
     }
     return 0;
   }
@@ -3043,7 +3131,7 @@ stunlib_encodeMessage(StunMessage*   message,
 
 
 
-  if (md5key)
+  if (md5key != NULL)
   {
     message->hasMessageIntegrity = true;
     memset( &message->messageIntegrity,0,sizeof(message->messageIntegrity) );
@@ -3094,10 +3182,10 @@ stunlib_encodeMessage(StunMessage*   message,
   pCurrPtr                  = (uint8_t*)buf;
   restlen                   = bufLen;
   stunEncodeHeader(&message->msgHdr, &pCurrPtr, &restlen);
-  if (md5key)
+  if (md5key != NULL)
   {
     uint32_t length;
-    length = 0;
+    (void)length;
     /*calculate and insert integrity hash*/
     pCurrPtr = (uint8_t*)buf;
 #if defined(__APPLE__)
@@ -3107,6 +3195,7 @@ stunlib_encodeMessage(StunMessage*   message,
            message->messageIntegrity.offset,
            &message->messageIntegrity.hash[0]);
 #else
+    length = 0;
     HMAC(EVP_sha1(),
          md5key, keyLen,
          pCurrPtr,     /*stunmsg string*/
@@ -3129,7 +3218,6 @@ stunlib_encodeMessage(StunMessage*   message,
   if (addFingerprint)
   {
     uint32_t crc;
-
     message->msgHdr.msgLength += 8;
 
     pCurrPtr = (uint8_t*)buf;
@@ -3202,6 +3290,22 @@ stunlib_addUserName(StunMessage* stunMsg,
   stunSetString(&stunMsg->username, userName, padChar);
   return true;
 }
+
+bool
+stunlib_addTTLString(StunMessage* stunMsg,
+                     const char*  TTLString,
+                     char         padChar)
+{
+  if (strlen(TTLString) > STUN_MSG_MAX_USERNAME_LENGTH)
+  {
+    return false;
+  }
+
+  stunMsg->hasTTLString = true;
+  stunSetString(&stunMsg->TTLString, TTLString, padChar);
+  return true;
+}
+
 
 bool
 stunlib_addRealm(StunMessage* stunMsg,
@@ -3336,11 +3440,10 @@ stunlib_setIP4Address(StunIPAddress* pIpAddr,
   }
 }
 
-
 void
 stunlib_setIP6Address(StunIPAddress* pIpAddr,
-                      uint8_t        addr[16],
-                      uint16_t       port)
+                      const uint8_t  addr[16],
+                      const uint16_t port)
 {
   if (pIpAddr)
   {
