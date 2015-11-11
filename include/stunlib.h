@@ -1,30 +1,6 @@
 /*
-Copyright 2014 Cisco. All rights reserved. 
-
-Redistribution and use in source and binary forms, with or without modification, are 
-permitted provided that the following conditions are met: 
-
-   1. Redistributions of source code must retain the above copyright notice, this list of 
-      conditions and the following disclaimer. 
-
-   2. Redistributions in binary form must reproduce the above copyright notice, this list 
-      of conditions and the following disclaimer in the documentation and/or other materials 
-      provided with the distribution. 
-
-THIS SOFTWARE IS PROVIDED BY CISCO ''AS IS'' AND ANY EXPRESS OR IMPLIED 
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL OR CONTRIBUTORS BE 
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
-IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
-DAMAGE. 
-
-The views and conclusions contained in the software and documentation are those of the 
-authors and should not be interpreted as representing official policies, either expressed 
-or implied, of Cisco.
-*/
+ *  See license file
+ */
 #ifndef STUNMSG_H
 #define STUNMSG_H
 
@@ -45,12 +21,12 @@ extern "C" {
 /*
  * Avoid disrupting std::min() and std::max()
  * when compiling .cpp files that include this
-*/
-#if !defined(max)&&!defined( __cplusplus)
-#define max(a, b) (((a) > (b)) ? (a) : (b))
+ */
+#if !defined(max) && !defined(__cplusplus)
+#define max(a, b) ( ( (a) > (b) ) ? (a) : (b) )
 #endif
-#if !defined(min)&&!defined( __cplusplus)
-#define min(a, b) (((a) < (b)) ? (a) : (b))
+#if !defined(min) && !defined(__cplusplus)
+#define min(a, b) ( ( (a) < (b) ) ? (a) : (b) )
 #endif
 
 
@@ -182,7 +158,8 @@ extern "C" {
 #define STUN_MAX_CHANNEL_ID              0x7FFF
 
 #define IPV4_ADDR_LEN                    16
-#define IPV4_ADDR_LEN_WITH_PORT          (IPV4_ADDR_LEN+6) /* Need extra space for :port */
+#define IPV4_ADDR_LEN_WITH_PORT          (IPV4_ADDR_LEN + 6) /* Need extra space
+                                                              *for :port */
 #define IPV6_ADDR_LEN                    100
 
 #define STUN_REQ_TRANSPORT_UDP         (uint32_t)17 /* IANA protocol number */
@@ -201,17 +178,24 @@ extern "C" {
 #define STUN_STRING_ALLIGNMENT          4
 
 #define STUNCLIENT_MAX_RETRANSMITS          9
-#define STUNCLIENT_RETRANSMIT_TIMEOUT_LIST      100, 200, 300, 400, 500, 500, 500, 500, 500  /* msec */
+#define STUNCLIENT_RETRANSMIT_TIMEOUT_LIST      100, 200, 300, 400, 500, 500, \
+  500, 500, 500                                                                              /*
+                                                                                              *msec
+                                                                                              **/
 #define STUNCLIENT_DFLT_TICK_TIMER_MS            50
 
 #define STUN_KEEPALIVE_TIMER_SEC    15
 
-#define TURN_SEND_IND_HDR_SIZE      36  /* fixed overhead when using  TURN send indication  */
+#define TURN_SEND_IND_HDR_SIZE      36  /* fixed overhead when using  TURN send
+                                         *indication  */
                                         /* hdr(20)+Cookie(8)+Vers(8)+Data(4) */
 #define TURN_INTEG_LEN              24  /* size of integrity attribute */
-#define TURN_CHANNEL_DATA_HDR_SIZE   4  /* overhead when using  TURN channel data     */
+#define TURN_CHANNEL_DATA_HDR_SIZE   4  /* overhead when using  TURN channel
+                                         *data     */
 
-#define STUN_MAX_PEER_ADDR          10 /* max no. of peer addresses supported  (e.g. when encoding  CreatePermission) */
+#define STUN_MAX_PEER_ADDR          10 /* max no. of peer addresses supported
+                                        * (e.g. when encoding  CreatePermission)
+                                        **/
 
 #define STUN_DFLT_PAD ' '             /* default padding char */
 
@@ -223,176 +207,177 @@ typedef enum
 }
 StunKeepAliveUsage;
 
-typedef struct{
-    uint8_t octet[STUN_MAGIC_COOKIE_SIZE];
+typedef struct {
+  uint8_t octet[STUN_MAGIC_COOKIE_SIZE];
 } StunMsgCookie;
 
 typedef struct
 {
-    uint8_t octet[STUN_MSG_ID_SIZE];
+  uint8_t octet[STUN_MSG_ID_SIZE];
 } StunMsgId;
 
 /* Stun message header.
  */
 typedef struct
 {
-    uint16_t      msgType;
-    uint16_t      msgLength;
-    StunMsgId     id;
-    StunMsgCookie cookie;
+  uint16_t      msgType;
+  uint16_t      msgLength;
+  StunMsgId     id;
+  StunMsgCookie cookie;
 } StunMsgHdr;
 
 
 typedef struct
 {
-    uint16_t type;
-    uint16_t length;
+  uint16_t type;
+  uint16_t length;
 } StunAtrHdr;
 
 
 typedef struct
 {
-    uint16_t port;
-    uint32_t addr;
+  uint16_t port;
+  uint32_t addr;
 } StunAddress4;
 
 typedef struct
 {
-    uint16_t port;
-    uint8_t addr[16];
+  uint16_t port;
+  uint8_t  addr[16];
 } StunAddress6;
 
 typedef struct
 {
-    uint8_t familyType;   /* IP 4 or 6, se above for define */
-    union
-    {
-        StunAddress4  v4;
-        StunAddress6  v6;
-    } addr;
+  uint8_t familyType;     /* IP 4 or 6, se above for define */
+  union
+  {
+    StunAddress4 v4;
+    StunAddress6 v6;
+  } addr;
 } StunIPAddress;
 
 typedef struct
 {
-    uint16_t reserved;
-    uint8_t errorClass;
-    uint8_t number;
-    char reason[STUN_MAX_STRING];
-    char padChar;
-    uint16_t sizeReason;
+  uint16_t reserved;
+  uint8_t  errorClass;
+  uint8_t  number;
+  char     reason[STUN_MAX_STRING];
+  char     padChar;
+  uint16_t sizeReason;
 } StunAtrError;
 
 typedef struct
 {
-    uint16_t attrType[STUN_MAX_UNKNOWN_ATTRIBUTES];
-    uint16_t numAttributes;
+  uint16_t attrType[STUN_MAX_UNKNOWN_ATTRIBUTES];
+  uint16_t numAttributes;
 } StunAtrUnknown;
 
 typedef struct
 {
-    char value[STUN_MAX_ATTR_SIZE];
-    char padChar;
-    uint16_t sizeValue;
+  char     value[STUN_MAX_ATTR_SIZE];
+  char     padChar;
+  uint16_t sizeValue;
 } StunAtrString;
 
 typedef struct
 {
-    uint16_t offset;
-    unsigned char hash[20];
+  uint16_t      offset;
+  unsigned char hash[20];
 } StunAtrIntegrity;
 
 
 typedef struct
 {
-    uint32_t value;
+  uint32_t value;
 } StunAtrValue;
 
 typedef struct
 {
-    uint64_t value;
+  uint64_t value;
 } StunAtrDoubleValue;
 
 
 typedef struct
 {
-    uint32_t  dataLen;
-    uint32_t  offset;
-    uint8_t   *pData;
+  uint32_t dataLen;
+  uint32_t offset;
+  uint8_t* pData;
 } StunData;
 
 typedef struct
 {
-    uint16_t  channelNumber;
-    uint16_t  rffu;         /* reserved */
+  uint16_t channelNumber;
+  uint16_t rffu;            /* reserved */
 }
 StunAtrChannelNumber;
 
 typedef struct
 {
-    uint8_t  protocol;
-    uint8_t  rffu[3];       /* reserved */
+  uint8_t protocol;
+  uint8_t rffu[3];          /* reserved */
 }
 StunAtrRequestedTransport;
 
 
 typedef struct
 {
-    /*first 4 bytes for type,
-      rest is for padding (future use)*/
-    uint8_t  family;
-    uint8_t  rffu[3];       /* reserved */
+  /*first 4 bytes for type,
+   *  rest is for padding (future use)*/
+  uint8_t family;
+  uint8_t rffu[3];          /* reserved */
 }StunAttrRequestedAddrFamily;
 
 
 typedef struct
 {
-    uint8_t  evenPort;
-    uint8_t  pad[3];
+  uint8_t evenPort;
+  uint8_t pad[3];
 }
 StunAtrEvenPort;
 
 
 typedef struct
 {
-    uint16_t  type;
-    uint8_t   interactivity;
-    uint8_t   pad;
+  uint16_t type;
+  uint8_t  interactivity;
+  uint8_t  pad;
 }
 StunAtrStreamType;
 
 typedef struct
 {
-    uint8_t flags;
-    uint8_t nodeCnt;
-    uint16_t tbd;
-    uint16_t upMaxBandwidth;
-    uint16_t downMaxBandwidth;
-}    
+  uint8_t  flags;
+  uint8_t  nodeCnt;
+  uint16_t tbd;
+  uint16_t upMaxBandwidth;
+  uint16_t downMaxBandwidth;
+}
 StunAtrNetworkStatus;
 
 typedef struct
 {
-    uint32_t first;
-    uint32_t second;
-    uint32_t third;
+  uint32_t first;
+  uint32_t second;
+  uint32_t third;
 }
 StunAtrCiscoNetworkFeedback;
 
 typedef struct
 {
-    uint16_t average;
-    uint16_t max;
-}    
+  uint16_t average;
+  uint16_t max;
+}
 StunAtrBandwidthUsage;
 
 
 typedef struct
 {
-    char stunUserName[STUN_MSG_MAX_USERNAME_LENGTH];
-    char stunPassword[STUN_MSG_MAX_PASSWORD_LENGTH];
-    char realm[STUN_MSG_MAX_REALM_LENGTH];
-    char nonce[STUN_MSG_MAX_NONCE_LENGTH];
-    unsigned char key[20];   /* for long  term cred: key= md5 hash of  username:realm:pass  */
+  char          stunUserName[STUN_MSG_MAX_USERNAME_LENGTH];
+  char          stunPassword[STUN_MSG_MAX_PASSWORD_LENGTH];
+  char          realm[STUN_MSG_MAX_REALM_LENGTH];
+  char          nonce[STUN_MSG_MAX_NONCE_LENGTH];
+  unsigned char key[20];     /* for long  term cred: key= md5 hash of
+                              * username:realm:pass  */
                              /* for short term cred: key=password  */
 } STUN_USER_CREDENTIALS;
 
@@ -401,26 +386,26 @@ typedef struct
 
 typedef struct
 {
-    uint16_t streamType;
-    uint8_t interactivity;
-    
-    uint16_t bandwidthUsage_average;
-    uint16_t bandwidthUsage_max;
+  uint16_t streamType;
+  uint8_t  interactivity;
 
-    uint8_t networkStatus_flags;
-    uint8_t networkStatus_nodeCnt;
-    uint16_t networkStatus_tbd;
-    uint16_t networkStatus_upMaxBandwidth;
-    uint16_t networkStatus_downMaxBandwidth;
-    
-    /*Ugh, maybee own structs? Will be Integrity protected*/
-    uint8_t networkStatusResp_flags;
-    uint8_t networkStatusResp_nodeCnt;
-    uint16_t networkStatusResp_tbd;
-    uint16_t networkStatusResp_upMaxBandwidth;
-    uint16_t networkStatusResp_downMaxBandwidth;
-    
-    
+  uint16_t bandwidthUsage_average;
+  uint16_t bandwidthUsage_max;
+
+  uint8_t  networkStatus_flags;
+  uint8_t  networkStatus_nodeCnt;
+  uint16_t networkStatus_tbd;
+  uint16_t networkStatus_upMaxBandwidth;
+  uint16_t networkStatus_downMaxBandwidth;
+
+  /*Ugh, maybee own structs? Will be Integrity protected*/
+  uint8_t  networkStatusResp_flags;
+  uint8_t  networkStatusResp_nodeCnt;
+  uint16_t networkStatusResp_tbd;
+  uint16_t networkStatusResp_upMaxBandwidth;
+  uint16_t networkStatusResp_downMaxBandwidth;
+
+
 
 } DiscussData;
 
@@ -428,158 +413,179 @@ typedef struct
 /* Decoded  STUN message */
 typedef struct
 {
-    StunMsgHdr msgHdr;
+  StunMsgHdr msgHdr;
 
-    bool hasMappedAddress;
-    StunIPAddress  mappedAddress;
+  bool          hasMappedAddress;
+  StunIPAddress mappedAddress;
 
-    bool hasUsername;
-    StunAtrString username;
+  bool          hasUsername;
+  StunAtrString username;
 
-    bool hasIntegirtyKey;
-    StunAtrString integrityKey;
+  bool          hasIntegirtyKey;
+  StunAtrString integrityKey;
 
-    bool hasMessageIntegrity;
-    StunAtrIntegrity messageIntegrity;
+  bool             hasMessageIntegrity;
+  StunAtrIntegrity messageIntegrity;
 
-    bool hasFingerPrint; /* attribute never stored */
+  bool hasFingerPrint;   /* attribute never stored */
 
-    bool hasErrorCode;
-    StunAtrError errorCode;
+  bool         hasErrorCode;
+  StunAtrError errorCode;
 
-    bool hasUnknownAttributes;
-    StunAtrUnknown unknownAttributes;
+  bool           hasUnknownAttributes;
+  StunAtrUnknown unknownAttributes;
 
-    bool hasXorMappedAddress;
-    StunIPAddress  xorMappedAddress;
+  bool          hasXorMappedAddress;
+  StunIPAddress xorMappedAddress;
 
-    bool hasSoftware;
-    StunAtrString software;
+  bool          hasSoftware;
+  StunAtrString software;
 
-    bool hasPathDiscovery;
-    StunAtrString path_discovery;
+  bool          hasPathDiscovery;
+  StunAtrString path_discovery;
 
-    bool hasLifetime;
-    StunAtrValue   lifetime;
+  bool         hasLifetime;
+  StunAtrValue lifetime;
 
-    bool hasAlternateServer;
-    StunIPAddress alternateServer;
+  bool          hasAlternateServer;
+  StunIPAddress alternateServer;
 
-    uint32_t xorPeerAddrEntries;
-    StunIPAddress xorPeerAddress[STUN_MAX_PEER_ADDR];
+  uint32_t      xorPeerAddrEntries;
+  StunIPAddress xorPeerAddress[STUN_MAX_PEER_ADDR];
 
-    bool hasData;
-    StunData data;
+  bool     hasData;
+  StunData data;
 
-    bool hasNonce;
-    StunAtrString nonce;
+  bool          hasNonce;
+  StunAtrString nonce;
 
-    bool hasRealm;
-    StunAtrString realm;
+  bool          hasRealm;
+  StunAtrString realm;
 
-    StunIPAddress  xorRelayAddressTMP;
+  StunIPAddress xorRelayAddressTMP;
 
-    bool hasXorRelayAddressIPv4;
-    StunIPAddress  xorRelayAddressIPv4;
+  bool          hasXorRelayAddressIPv4;
+  StunIPAddress xorRelayAddressIPv4;
 
-    bool hasXorRelayAddressIPv6;
-    StunIPAddress  xorRelayAddressIPv6;
+  bool          hasXorRelayAddressIPv6;
+  StunIPAddress xorRelayAddressIPv6;
 
-    bool hasXorRelayAddressSSODA;
+  bool hasXorRelayAddressSSODA;
 
-    /* Used when parsing message */ 
-    StunAttrRequestedAddrFamily requestedAddrFamilyTMP;
+  /* Used when parsing message */
+  StunAttrRequestedAddrFamily requestedAddrFamilyTMP;
 
-    bool hasRequestedAddrFamilyIPv4;
-    StunAttrRequestedAddrFamily requestedAddrFamilyIPv4;
+  bool                        hasRequestedAddrFamilyIPv4;
+  StunAttrRequestedAddrFamily requestedAddrFamilyIPv4;
 
-    bool hasRequestedAddrFamilyIPv6;
-    StunAttrRequestedAddrFamily requestedAddrFamilyIPv6;
+  bool                        hasRequestedAddrFamilyIPv6;
+  StunAttrRequestedAddrFamily requestedAddrFamilyIPv6;
 
-    bool hasRequestedAddrFamilySSODA;
-    
-    bool hasChannelNumber;
-    StunAtrChannelNumber channelNumber;
+  bool hasRequestedAddrFamilySSODA;
 
-    bool hasPriority;
-    StunAtrValue   priority;
+  bool                 hasChannelNumber;
+  StunAtrChannelNumber channelNumber;
 
-    bool hasControlling;
-    StunAtrDoubleValue controlling;
+  bool         hasPriority;
+  StunAtrValue priority;
 
-    bool hasControlled;
-    StunAtrDoubleValue controlled;
+  bool               hasControlling;
+  StunAtrDoubleValue controlling;
 
-    bool hasRequestedTransport;
-    StunAtrRequestedTransport requestedTransport;
+  bool               hasControlled;
+  StunAtrDoubleValue controlled;
 
-    bool hasEvenPort;
-    StunAtrEvenPort evenPort;
+  bool                      hasRequestedTransport;
+  StunAtrRequestedTransport requestedTransport;
 
-    bool hasReservationToken;
-    StunAtrDoubleValue reservationToken;
+  bool            hasEvenPort;
+  StunAtrEvenPort evenPort;
 
-    bool hasStreamType;
-    StunAtrStreamType streamType;
+  bool               hasReservationToken;
+  StunAtrDoubleValue reservationToken;
 
-    bool hasBandwidthUsage;
-    StunAtrBandwidthUsage bandwidthUsage;
+  bool              hasStreamType;
+  StunAtrStreamType streamType;
 
-    /*After Integrity attr*/
-    bool hasNetworkStatus;
-    StunAtrNetworkStatus networkStatus;
+  bool                  hasBandwidthUsage;
+  StunAtrBandwidthUsage bandwidthUsage;
 
-    bool hasCiscoNetFeed;
-    StunAtrCiscoNetworkFeedback ciscoNetFeed;
+  /*After Integrity attr*/
+  bool                 hasNetworkStatus;
+  StunAtrNetworkStatus networkStatus;
 
-    /*Integrity protected*/
-    bool hasNetworkStatusResp;
-    StunAtrNetworkStatus networkStatusResp;
+  bool                        hasCiscoNetFeed;
+  StunAtrCiscoNetworkFeedback ciscoNetFeed;
 
-    bool hasCiscoNetFeedResp;
-    StunAtrCiscoNetworkFeedback ciscoNetFeedResp;
+  /*Integrity protected*/
+  bool                 hasNetworkStatusResp;
+  StunAtrNetworkStatus networkStatusResp;
+
+  bool                        hasCiscoNetFeedResp;
+  StunAtrCiscoNetworkFeedback ciscoNetFeedResp;
 
 
 
-    /* No value, only flaged */
-    bool hasUseCandidate;
-    bool hasDontFragment;
+  /* No value, only flaged */
+  bool hasUseCandidate;
+  bool hasDontFragment;
 } StunMessage;
 
 /* Defines how a user of stun sends data on e.g. socket */
-typedef void (*STUN_SENDFUNC)(int                    sockHandle,    /* context - e.g. socket handle */
-                              const uint8_t         *buffer,        /* ptr to buffer to send */
-                              int                    bufLen,        /* length of send buffer */
-                              const struct sockaddr *dstAddr,       /* Optional, if connected to socket */
-                              bool                   useRelay);     /* User context data. Optional */
+typedef void (* STUN_SENDFUNC)(int                    sockHandle,   /* context -
+                                                                     *e.g.
+                                                                     *socket
+                                                                     *handle */
+                               const uint8_t*         buffer,       /* ptr to
+                                                                     *buffer to
+                                                                     *send */
+                               int                    bufLen,       /* length of
+                                                                     *send
+                                                                     *buffer */
+                               const struct sockaddr* dstAddr,      /* Optional,
+                                                                     *if
+                                                                     *connected
+                                                                     *to socket
+                                                                     **/
+                               bool                   useRelay);    /* User
+                                                                     *context
+                                                                     *data.
+                                                                     *Optional
+                                                                     **/
 
 
 /* Defines how errors are reported */
-typedef void  (*STUN_ERR_FUNC)(const char *fmt, va_list ap);
+typedef void (* STUN_ERR_FUNC)(const char* fmt,
+                               va_list     ap);
 
 
 /**********************
- ***** API Funcs ******
- **********************/
+***** API Funcs ******
+**********************/
 
 /***********************************************/
 /*************  Decode functions ***************/
 /***********************************************/
 
 /*!
- * STUNLIB_isStunMsg() - use this function to demux STUN messages from a media stream such as RTP or RTCP
+ * STUNLIB_isStunMsg() - use this function to demux STUN messages from a media
+ *stream such as RTP or RTCP
  * \param payload        payload  to check (e.g. as received in RTP stream)
  * \param length         payload length
  * \return               TRUE if message is a STUN message
  */
-bool stunlib_isStunMsg(const uint8_t *payload, uint16_t length);
+bool
+stunlib_isStunMsg(const uint8_t* payload,
+                  uint16_t       length);
 
 /*!
- * stunlib_isTurnChannelData - use this function to demux STUN messages from a media stream such as RTP or RTCP
+ * stunlib_isTurnChannelData - use this function to demux STUN messages from a
+ *media stream such as RTP or RTCP
  * \param payload        payload  to check (e.g. as received in RTP stream)
  * \return               TRUE if message is TURN Channel Data
  */
-bool stunlib_isTurnChannelData(uint8_t *payload);
+bool
+stunlib_isTurnChannelData(uint8_t* payload);
 
 
 /*!
@@ -591,73 +597,84 @@ bool stunlib_isTurnChannelData(uint8_t *payload);
  * \param stream          debug stream (NULL=no debug)
  * \return                True if parsing OK.
  */
-bool stunlib_DecodeMessage(
-    const uint8_t* buf,
-    size_t bufLen,
-    StunMessage* message,
-    StunAtrUnknown* unknowns,
-    FILE *stream);
+bool
+stunlib_DecodeMessage(const uint8_t*  buf,
+                      size_t          bufLen,
+                      StunMessage*    message,
+                      StunAtrUnknown* unknowns,
+                      FILE*           stream);
 
 /*!
- * stunlib_checkIntegrity -  Checks the integrity attribute. Be sure to send in the
-                             correct key. simple Simple password for short term.
-                             MD5(user:realm:pass) for long term.
+ * stunlib_checkIntegrity -  Checks the integrity attribute. Be sure to send in
+ *the
+ *                            correct key. simple Simple password for short
+ *term.
+ *                            MD5(user:realm:pass) for long term.
  * \param buf             serialised buffer, network order
  * \param buflen          Length of buffer
  * \param message         STUN/TURN message to check integrity on.
  * \param integrityKey    Integrity key, password used to calculate integrity.
  */
 
-bool stunlib_checkIntegrity(
-    const uint8_t* buf,
-    size_t bufLen,
-    StunMessage* message,
-    uint8_t *integrityKey,
-    int integrityKeyLen);
+bool
+stunlib_checkIntegrity(const uint8_t* buf,
+                       size_t         bufLen,
+                       StunMessage*   message,
+                       uint8_t*       integrityKey,
+                       int            integrityKeyLen);
 
 /*!
  * STUNLIB_isRequest() - Test if  decoded stun message is a request
  * \param msg            STUN message to check
  * \return               TRUE if message is a request
  */
-bool stunlib_isRequest(const StunMessage *msg);
+bool
+stunlib_isRequest(const StunMessage* msg);
 
 /*!
- * STUNLIB_isSuccessResponse() - Test if decoded stun message is a STUN success response
+ * STUNLIB_isSuccessResponse() - Test if decoded stun message is a STUN success
+ *response
  * \param msg            decoded STUN message to check
  * \return               TRUE if message is a success response
  */
-bool stunlib_isSuccessResponse(const StunMessage *msg);
+bool
+stunlib_isSuccessResponse(const StunMessage* msg);
 
 /*!
- * STUNLIB_isErrorResponse() - Test if decoded stun message is a STUN error response
+ * STUNLIB_isErrorResponse() - Test if decoded stun message is a STUN error
+ *response
  * \param msg            decoded STUN message to check
  * \return               TRUE if message is an error response
  */
-bool stunlib_isErrorResponse(const StunMessage *msg);
+bool
+stunlib_isErrorResponse(const StunMessage* msg);
 
 
 /*!
- * STUNLIB_isResponse() - Test if decoded stun message is a STUN (success or error) response
+ * STUNLIB_isResponse() - Test if decoded stun message is a STUN (success or
+ *error) response
  * \param msg            decoded STUN message to check
  * \return               TRUE if message is a response
  */
-bool stunlib_isResponse(const StunMessage *msg);
+bool
+stunlib_isResponse(const StunMessage* msg);
 
 /*!
  * STUNLIB_isIndication() - Test if decoded stun message is a STUN indication
  * \param msg            STUN message to check
  * \return               TRUE if message is an indication
  */
-bool stunlib_isIndication(const StunMessage *msg);
+bool
+stunlib_isIndication(const StunMessage* msg);
 
 
 uint16_t
-stunlib_StunMsgLen (const uint8_t *payload);
+stunlib_StunMsgLen (const uint8_t* payload);
 
-unsigned int stunlib_decodeTurnChannelNumber(uint16_t      *channelNumber,
-                                             uint16_t      *length,
-                                             const uint8_t *buf);
+unsigned int
+stunlib_decodeTurnChannelNumber(uint16_t*      channelNumber,
+                                uint16_t*      length,
+                                const uint8_t* buf);
 
 
 /***********************************************/
@@ -666,35 +683,42 @@ unsigned int stunlib_decodeTurnChannelNumber(uint16_t      *channelNumber,
 
 
 /*!
- * stunEncodeMessage() - Encode/serialise a STUN message into buffer from StunMessage struct
+ * stunEncodeMessage() - Encode/serialise a STUN message into buffer from
+ *StunMessage struct
  * \param message        STUN message to encode
  * \param buf            Buffer to store encoded STUN message in
  * \param bufLen         Length of encoded buffer
- * \param key            Used to calculate message integrity attribute, key in HMAC-SHA1 alg.
- *                       For Long term credentials = 128 bit MD5 hash of username+nonce+password. (created using STUNMSG_createMD5Key())
+ * \param key            Used to calculate message integrity attribute, key in
+ *HMAC-SHA1 alg.
+ *                       For Long term credentials = 128 bit MD5 hash of
+ *username+nonce+password. (created using STUNMSG_createMD5Key())
  *                       For short term credantials = password
  * \param keyLen         length of key
  * \param verbose        Verbose
- * \return               0 if msg encode fails, else the length of the encoded message (including any padding)
+ * \return               0 if msg encode fails, else the length of the encoded
+ *message (including any padding)
  */
-uint32_t stunlib_encodeMessage(StunMessage *message,
-                               unsigned char   *buf,
-                               unsigned int     bufLen,
-                               unsigned char   *key,
-                               unsigned int     keyLen,
-                               FILE            *stream);
+uint32_t
+stunlib_encodeMessage(StunMessage*   message,
+                      unsigned char* buf,
+                      unsigned int   bufLen,
+                      unsigned char* key,
+                      unsigned int   keyLen,
+                      FILE*          stream);
 
 
 /* encode a stun keepalive, return the length or 0 if it fails
- * \param usage     - Ice results in  BindingIndication, Outbound results in BindingRequest
+ * \param usage     - Ice results in  BindingIndication, Outbound results in
+ *BindingRequest
  * \param transId   - ptr to transaction id
  * \param buf       - Buffer to store encoded STUN message in
  * \param bufLen    - Length of encoded buffer
  */
-uint32_t stunlib_encodeStunKeepAliveReq(StunKeepAliveUsage usage,
-                                        StunMsgId *transId,
-                                        uint8_t   *buf,
-                                        int        bufLen);
+uint32_t
+stunlib_encodeStunKeepAliveReq(StunKeepAliveUsage usage,
+                               StunMsgId*         transId,
+                               uint8_t*           buf,
+                               int                bufLen);
 
 
 /* encode a stun Outbound Keepalive response, return the length or 0 if it fails
@@ -703,107 +727,165 @@ uint32_t stunlib_encodeStunKeepAliveReq(StunKeepAliveUsage usage,
  * \param buf       - Buffer to store encoded STUN message in
  * \param bufLen    - Length of encoded buffer
  */
-uint32_t stunlib_encodeStunKeepAliveResp(StunMsgId     *transId,
-                                         StunIPAddress *srvrRflxAddr,
-                                         uint8_t       *buf,
-                                         int            bufLen);
+uint32_t
+stunlib_encodeStunKeepAliveResp(StunMsgId*     transId,
+                                StunIPAddress* srvrRflxAddr,
+                                uint8_t*       buf,
+                                int            bufLen);
 
 
 /*
- *  stunlib_encodeTurnChannelNumber() - Encode/serialise channel numbetr and  length fields of Turn Channel Data
+ *  stunlib_encodeTurnChannelNumber() - Encode/serialise channel numbetr and
+ * length fields of Turn Channel Data
  *  \param channelNumber    TURN Channel Number
- *  \param length           Length of application data. (=no. of bytes following ChannelNumber/Length).
+ *  \param length           Length of application data. (=no. of bytes following
+ *ChannelNumber/Length).
  *  \param buf              Destination
  */
-unsigned int stunlib_encodeTurnChannelNumber(uint16_t       channelNumber,
-                                             uint16_t       length,
-                                             unsigned char *buf);
+unsigned int
+stunlib_encodeTurnChannelNumber(uint16_t       channelNumber,
+                                uint16_t       length,
+                                unsigned char* buf);
 
 /*
  * encode stun sendIndication
  * \param stunbuf       Destination, encoded stun message
- * \param dataBuf       payload. Note use NULL if payload is already inplace in stunBuf (zero copy)
+ * \param dataBuf       payload. Note use NULL if payload is already inplace in
+ *stunBuf (zero copy)
  * \param maxBufSize    Size of destination buffer
  * \param payloadLength Len of data
  * \param dstAddr       Destination
  */
-uint32_t stunlib_EncodeSendIndication(
-    uint8_t   *stunBuf,
-    uint8_t   *dataBuf,
-    uint32_t   maxBufSize,
-    uint32_t   payloadLength,
-    const struct sockaddr *dstAddr);
+uint32_t
+stunlib_EncodeSendIndication(uint8_t*               stunBuf,
+                             uint8_t*               dataBuf,
+                             uint32_t               maxBufSize,
+                             uint32_t               payloadLength,
+                             const struct sockaddr* dstAddr);
 
 /*
- * encode stun DataIndication (note: only used by a server or for simulating server)
+ * encode stun DataIndication (note: only used by a server or for simulating
+ *server)
  * \param stunbuf       Destination, encoded stun message
- * \param dataBuf       payload. Note use NULL if payload is already inplace in stunBuf (zero copy)
+ * \param dataBuf       payload. Note use NULL if payload is already inplace in
+ *stunBuf (zero copy)
  * \param maxBufSize    Size of destination buffer
  * \param payloadLength Len of data
  * \param dstAddr       Destination
  */
-uint32_t stunlib_EncodeDataIndication(
-    uint8_t   *stunBuf,
-    uint8_t   *dataBuf,
-    uint32_t   maxBufSize,
-    uint32_t   payloadLength,
-    const struct sockaddr *dstAddr);
+uint32_t
+stunlib_EncodeDataIndication(uint8_t*               stunBuf,
+                             uint8_t*               dataBuf,
+                             uint32_t               maxBufSize,
+                             uint32_t               payloadLength,
+                             const struct sockaddr* dstAddr);
 
 
 /***********************************************/
 /***********      utilities       **************/
 /***********************************************/
 
-void stun_printMessage(FILE *stream, const StunMessage *pMsg);
+void
+stun_printMessage(FILE*              stream,
+                  const StunMessage* pMsg);
 
-/* \return random turn channel number in range STUN_MIN_CHANNEL_ID.. STUN_MAX_CHANNEL_ID */
-uint16_t stunlib_createRandomTurnChanNum(void);
+/* \return random turn channel number in range STUN_MIN_CHANNEL_ID..
+ *STUN_MAX_CHANNEL_ID */
+uint16_t
+stunlib_createRandomTurnChanNum(void);
 
 /*
  * Convert decoded msgType to string
-*/
-char const *stunlib_getMessageName(uint16_t msgType);
+ */
+char const*
+stunlib_getMessageName(uint16_t msgType);
 
 /*!
- * stunGetErrorReason() - Given an errorClass and number, returns standard reason text
+ * stunGetErrorReason() - Given an errorClass and number, returns standard
+ *reason text
  * \param errorClass
  * \param errorNumber
  */
-char const *stunlib_getErrorReason(uint16_t errorClass, uint16_t errorNumber);
+char const*
+stunlib_getErrorReason(uint16_t errorClass,
+                       uint16_t errorNumber);
 
 
-void stunlib_setIP4Address(StunIPAddress* pIpAdr, uint32_t addr, uint16_t port);
+void
+stunlib_setIP4Address(StunIPAddress* pIpAdr,
+                      uint32_t       addr,
+                      uint16_t       port);
 /* Addr is 4 long. With most significant DWORD in pos 0 */
-void stunlib_setIP6Address(StunIPAddress *pIpAdr, uint8_t addr[16], uint16_t port);
-int stunlib_compareIPAddresses(const StunIPAddress *pS1, const StunIPAddress *pS2);
-void stunlib_printBuffer(FILE *stream, const uint8_t *pBuf, int len, char const * szHead);
+void
+stunlib_setIP6Address(StunIPAddress* pIpAdr,
+                      uint8_t        addr[16],
+                      uint16_t       port);
+int
+stunlib_compareIPAddresses(const StunIPAddress* pS1,
+                           const StunIPAddress* pS2);
+void
+stunlib_printBuffer(FILE*          stream,
+                    const uint8_t* pBuf,
+                    int            len,
+                    char const*    szHead);
 
 
-void     stunlib_createId(StunMsgId *pId, long randval, unsigned char retries);
-bool     stunlib_addRealm(StunMessage *stunMsg, const char *realm, char padChar);
-bool     stunlib_addRequestedTransport(StunMessage *stunMsg, uint8_t protocol);
-bool     stunlib_addRequestedAddrFamily(StunMessage *stunMsg, int sa_family);
-bool     stunlib_addUserName(StunMessage *stunMsg, const char *userName, char padChar);
-bool     stunlib_addNonce(StunMessage *stunMsg, const char *nonce, char padChar);
-bool     stunlib_addSoftware(StunMessage *stunMsg, const char *software, char padChar);
-bool     stunlib_addError(StunMessage *stunMsg, const char *reasonStr, uint16_t classAndNumber,  char padChar);
-bool     stunlib_addChannelNumber(StunMessage *stunMsg,  uint16_t channelNumber);
-uint32_t stunlib_calculateFingerprint(const uint8_t *buf, size_t len);
-bool     stunlib_checkFingerPrint(const uint8_t *buf, uint32_t fpOffset);
+void
+stunlib_createId(StunMsgId*    pId,
+                 long          randval,
+                 unsigned char retries);
+bool
+stunlib_addRealm(StunMessage* stunMsg,
+                 const char*  realm,
+                 char         padChar);
+bool
+stunlib_addRequestedTransport(StunMessage* stunMsg,
+                              uint8_t      protocol);
+bool
+stunlib_addRequestedAddrFamily(StunMessage* stunMsg,
+                               int          sa_family);
+bool
+stunlib_addUserName(StunMessage* stunMsg,
+                    const char*  userName,
+                    char         padChar);
+bool
+stunlib_addNonce(StunMessage* stunMsg,
+                 const char*  nonce,
+                 char         padChar);
+bool
+stunlib_addSoftware(StunMessage* stunMsg,
+                    const char*  software,
+                    char         padChar);
+bool
+stunlib_addError(StunMessage* stunMsg,
+                 const char*  reasonStr,
+                 uint16_t     classAndNumber,
+                 char         padChar);
+bool
+stunlib_addChannelNumber(StunMessage* stunMsg,
+                         uint16_t     channelNumber);
+uint32_t
+stunlib_calculateFingerprint(const uint8_t* buf,
+                             size_t         len);
+bool
+stunlib_checkFingerPrint(const uint8_t* buf,
+                         uint32_t       fpOffset);
 
 
-/* Concat  username+realm+passwd into string "<username>:<realm>:<password>" then run the MD5 alg.
+/* Concat  username+realm+passwd into string "<username>:<realm>:<password>"
+ * then run the MD5 alg.
  * on this string to create a 128but MD5 hash in md5key.
  *
  * \param   md5Key    calculated md5key, must be min 16 bytes.
  * \param   userName  C string
  * \param   realm     C string
  * \param   password  C string
-*/
-void stunlib_createMD5Key(unsigned char *md5key,
-                          const char *userName,
-                          const char *realm,
-                          const char *password);
+ */
+void
+stunlib_createMD5Key(unsigned char* md5key,
+                     const char*    userName,
+                     const char*    realm,
+                     const char*    password);
 
 
 #ifdef __cplusplus

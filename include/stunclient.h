@@ -1,30 +1,6 @@
 /*
-Copyright 2014 Cisco. All rights reserved. 
-
-Redistribution and use in source and binary forms, with or without modification, are 
-permitted provided that the following conditions are met: 
-
-   1. Redistributions of source code must retain the above copyright notice, this list of 
-      conditions and the following disclaimer. 
-
-   2. Redistributions in binary form must reproduce the above copyright notice, this list 
-      of conditions and the following disclaimer in the documentation and/or other materials 
-      provided with the distribution. 
-
-THIS SOFTWARE IS PROVIDED BY CISCO ''AS IS'' AND ANY EXPRESS OR IMPLIED 
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL OR CONTRIBUTORS BE 
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
-IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
-DAMAGE. 
-
-The views and conclusions contained in the software and documentation are those of the 
-authors and should not be interpreted as representing official policies, either expressed 
-or implied, of Cisco.
-*/
+ *  See license file
+ */
 
 #ifndef STUNCLIENT_H
 #define STUNCLIENT_H
@@ -52,62 +28,71 @@ typedef struct STUN_CLIENT_DATA STUN_CLIENT_DATA;
 /* category of info sent in STUN_INFO_FUNC */
 typedef enum
 {
-    StunInfoCategory_Info,
-    StunInfoCategory_Error,
-    StunInfoCategory_Trace
+  StunInfoCategory_Info,
+  StunInfoCategory_Error,
+  StunInfoCategory_Trace
 
 } StunInfoCategory_T;
 
 typedef enum
 {
-    StunResult_Empty,                    /* for testing */
-    StunResult_BindOk,                   /* successful */
-    StunResult_BindFail,                 /* Received BindErrorResp */
-    StunResult_BindFailNoAnswer,         /* Bind Req failed - no contact with stun server */
-    StunResult_BindFailUnauthorised,     /* passwd/username is incorrect */
-    StunResult_CancelComplete,           /* Request is cancelled and timed out */
-    StunResult_InternalError,
-    StunResult_MalformedResp
+  StunResult_Empty,                      /* for testing */
+  StunResult_BindOk,                     /* successful */
+  StunResult_BindFail,                   /* Received BindErrorResp */
+  StunResult_BindFailNoAnswer,           /* Bind Req failed - no contact with
+                                          *stun server */
+  StunResult_BindFailUnauthorised,       /* passwd/username is incorrect */
+  StunResult_CancelComplete,             /* Request is cancelled and timed out
+                                          **/
+  StunResult_InternalError,
+  StunResult_MalformedResp
 } StunResult_T;
 
 
-/* Signalled back to the caller as a paramter in the TURN callback (see TURNCB) */
+/* Signalled back to the caller as a paramter in the TURN callback (see TURNCB)
+ **/
 
 
 typedef struct
 {
-    StunMsgId               msgId;
-    StunResult_T            stunResult;
-    struct sockaddr_storage rflxAddr;
-    struct sockaddr_storage srcAddr;
-    struct sockaddr_storage dstBaseAddr;  /* The destination seen from the sender of the response */
+  StunMsgId               msgId;
+  StunResult_T            stunResult;
+  struct sockaddr_storage rflxAddr;
+  struct sockaddr_storage srcAddr;
+  struct sockaddr_storage dstBaseAddr;    /* The destination seen from the
+                                           *sender of the response */
 } StunCallBackData_T;
 
 /* for output of managment info (optional) */
-typedef void  (*STUN_INFO_FUNC_PTR)(void *userData, StunInfoCategory_T category, char *ErrStr);
+typedef void (* STUN_INFO_FUNC_PTR)(void*              userData,
+                                    StunInfoCategory_T category,
+                                    char*              ErrStr);
 
 /* Signalling back to user e.g. result of BindResp.
- *   userCtx        - User provided context, as provided in StunClient_startxxxx(userCtx,...)
- *   stunCbData     - User provided stun callback data. stunbind writes status here. e.g. Alloc ok + reflexive + relay address
+ *   userCtx        - User provided context, as provided in
+ *StunClient_startxxxx(userCtx,...)
+ *   stunCbData     - User provided stun callback data. stunbind writes status
+ *here. e.g. Alloc ok + reflexive + relay address
  */
-typedef void (*STUNCB)(void *userCtx, StunCallBackData_T *stunCbData);
+typedef void (* STUNCB)(void*               userCtx,
+                        StunCallBackData_T* stunCbData);
 
 
-typedef struct{
-    int32_t globalSocketId;
-    STUN_SENDFUNC sendFunc;
+typedef struct {
+  int32_t       globalSocketId;
+  STUN_SENDFUNC sendFunc;
 
-    /* Request Data */
-    char     ufrag[STUN_MAX_STRING];
-    uint32_t ufragLen;
-    uint32_t peerPriority;
-    bool     useCandidate;
-    bool     iceControlling;
-    bool     iceControlled;
-    uint64_t tieBreaker;
-    uint8_t  transactionId[12];
-    bool     fromRelay;
-    uint32_t peerPort;
+  /* Request Data */
+  char     ufrag[STUN_MAX_STRING];
+  uint32_t ufragLen;
+  uint32_t peerPriority;
+  bool     useCandidate;
+  bool     iceControlling;
+  bool     iceControlled;
+  uint64_t tieBreaker;
+  uint8_t  transactionId[12];
+  bool     fromRelay;
+  uint32_t peerPort;
 } STUN_INCOMING_REQ_DATA;
 
 
@@ -117,107 +102,142 @@ typedef struct{
  *    InstanceData - memory allocated by user, to be used by the StunClient.
  */
 bool
-StunClient_Alloc(STUN_CLIENT_DATA **clientDataPtr);
+StunClient_Alloc(STUN_CLIENT_DATA** clientDataPtr);
 
 
-void StunClient_free(STUN_CLIENT_DATA *clientData);
+void
+StunClient_free(STUN_CLIENT_DATA* clientData);
 
 
 /*
  *  initialisation:
  *    Should be called (once only) before StunClient_startxxxxxx().
  *    InstanceData   - memory allocated by user, to be used by the StunClient.
- *    funcPtr        - Will be called by Stun when it outputs management info and trace.
- *                     If this is NULL, then there is no output.  You can provide a function such as below::
+ *    funcPtr        - Will be called by Stun when it outputs management info
+ *and trace.
+ *                     If this is NULL, then there is no output.  You can
+ *provide a function such as below::
  *    userData       - void pointer to be returned with logger callback
  */
 
 void
-StunClient_RegisterLogger(STUN_CLIENT_DATA *clientData, STUN_INFO_FUNC_PTR logPtr,
-			  void * userData);
+StunClient_RegisterLogger(STUN_CLIENT_DATA*  clientData,
+                          STUN_INFO_FUNC_PTR logPtr,
+                          void*              userData);
 
 
 /*
  *  Initiate a Stun Bind Transaction
  *
- *     userCtx          -  user specific context info (e.g. CallId/ChanId).  Optional, can be NULL. STUN does not write to this data.
+ *     userCtx          -  user specific context info (e.g. CallId/ChanId).
+ * Optional, can be NULL. STUN does not write to this data.
  *     serverAddr       -  Address of TURN server in format  "a.b.c.d:port"
  *     baseAddr         -  Address of BASE in format  "a.b.c.d:port"
  *     useRelay         -  True to send via TURN server
- *     uFrag            -  Combination of local and remote ufrag exchanged in INVITE(LFRAG) / OK(RFRAG) in format <LFRAG>:<RFRAG>
- *     password         -  Remote password, exchanged in invite/ok.    \0 terminated string. Max 512 chars.
+ *     uFrag            -  Combination of local and remote ufrag exchanged in
+ *INVITE(LFRAG) / OK(RFRAG) in format <LFRAG>:<RFRAG>
+ *     password         -  Remote password, exchanged in invite/ok.    \0
+ *terminated string. Max 512 chars.
  *     peerPriority     -  Candidate Priority. See ICE-19 spec.
  *     useCandidate     -
  *     iceControlling   -
  *     tieBreaker       -
  *     transactionId    -
- *     sockhandle       -  used as 1st parameter in STUN_SENDFUNC(), typically a socket.
- *     sendFunc         -  function used to send STUN packet. send(sockhandle,buff, len, turnServerAddr, userCtx)
- *     stunCbFunc       -  user provided callback function used by turn to signal the result of an allocation or channel bind etc...
- *     stunCbData       -  user provided callback turn data. turn writes to this data area.
+ *     sockhandle       -  used as 1st parameter in STUN_SENDFUNC(), typically a
+ *socket.
+ *     sendFunc         -  function used to send STUN packet.
+ *send(sockhandle,buff, len, turnServerAddr, userCtx)
+ *     stunCbFunc       -  user provided callback function used by turn to
+ *signal the result of an allocation or channel bind etc...
+ *     stunCbData       -  user provided callback turn data. turn writes to this
+ *data area.
  *
- *     returns          -  Turn instance/context. Application should store this in further calls to TurnClient_StartChannelBindReq(), TurnClient_HandleIncResp().
+ *     returns          -  Turn instance/context. Application should store this
+ *in further calls to TurnClient_StartChannelBindReq(),
+ *TurnClient_HandleIncResp().
  */
-int  StunClient_startBindTransaction(STUN_CLIENT_DATA      *clientData,
-                                     void                  *userCtx,
-                                     const struct sockaddr *serverAddr,
-                                     const struct sockaddr *baseAddr,
-                                     bool                   useRelay,
-                                     const char            *ufrag,
-                                     const char            *password,
-                                     uint32_t               peerPriority,
-                                     bool                   useCandidate,
-                                     bool                   iceControlling,
-                                     uint64_t               tieBreaker,
-                                     StunMsgId              transactionId,
-                                     uint32_t               sockhandle,
-                                     STUN_SENDFUNC          sendFunc,
-                                     STUNCB                 stunCbFunc,
-                                     DiscussData        *discussData); /* nullptr if no malicedata should be sent. */
+int
+StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
+                                void*                  userCtx,
+                                const struct sockaddr* serverAddr,
+                                const struct sockaddr* baseAddr,
+                                bool                   useRelay,
+                                const char*            ufrag,
+                                const char*            password,
+                                uint32_t               peerPriority,
+                                bool                   useCandidate,
+                                bool                   iceControlling,
+                                uint64_t               tieBreaker,
+                                StunMsgId              transactionId,
+                                uint32_t               sockhandle,
+                                STUN_SENDFUNC          sendFunc,
+                                STUNCB                 stunCbFunc,
+                                DiscussData*           discussData);   /*
+                                                                        *nullptr
+                                                                        *if no
+                                                                        *malicedata
+                                                                        *should
+                                                                        *be
+                                                                        *sent.
+                                                                        **/
 
 /*
- * This function must be called by the application every N msec. N must be same as in StunClientBind_Init(instances, N)
+ * This function must be called by the application every N msec. N must be same
+ *as in StunClientBind_Init(instances, N)
  */
-void StunClient_HandleTick(STUN_CLIENT_DATA *clientData, uint32_t TimerResMsec);
+void
+StunClient_HandleTick(STUN_CLIENT_DATA* clientData,
+                      uint32_t          TimerResMsec);
 
 /*
  *  msg           - Decoded STUN message.
  *  srcAddr       - Source adress in format  "a.b.c.d:port"
  *
  */
-void StunClient_HandleIncResp(STUN_CLIENT_DATA *clientData, const StunMessage *msg,
-			      const struct sockaddr *srcAddr);
+void
+StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
+                         const StunMessage*     msg,
+                         const struct sockaddr* srcAddr);
 
 
 /*
  * Cancel a transaction with  matching  transaction id
  *      transactionId  - Transaction id.
  * return -  if  transaction found returns ctx/instance
- *        -  if  no instance found with transactionid, returns  STUNCLIENT_CTX_UNKNOWN
+ *        -  if  no instance found with transactionid, returns
+ * STUNCLIENT_CTX_UNKNOWN
  */
-int StunClient_cancelBindingTransaction(STUN_CLIENT_DATA *clientData, StunMsgId transactionId);
+int
+StunClient_cancelBindingTransaction(STUN_CLIENT_DATA* clientData,
+                                    StunMsgId         transactionId);
 
 
 /********* Server handling: send STUN BIND RESP *************/
-bool StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA      *clientData,
-                                            int32_t                globalSocketId,
-                                            StunMsgId              transactionId,
-                                            const char            *password,
-                                            const struct sockaddr *mappedAddr,
-                                            const struct sockaddr *dstAddr,
-                                            STUN_SENDFUNC          sendFunc,
-                                            bool                   useRelay,
-                                            uint32_t               responseCode,
-                                            DiscussData           *discussData);
+bool
+StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
+                                       int32_t                globalSocketId,
+                                       StunMsgId              transactionId,
+                                       const char*            password,
+                                       const struct sockaddr* mappedAddr,
+                                       const struct sockaddr* dstAddr,
+                                       STUN_SENDFUNC          sendFunc,
+                                       bool                   useRelay,
+                                       uint32_t               responseCode,
+                                       DiscussData*           discussData);
 
 /********** Server handling:  incoming STUN BIND REQ **********/
-bool StunServer_HandleStunIncomingBindReqMsg(STUN_CLIENT_DATA *clientData,
-                                             STUN_INCOMING_REQ_DATA  *pReq,
-                                             const StunMessage *stunMsg,
-                                             bool fromRelay);
+bool
+StunServer_HandleStunIncomingBindReqMsg(STUN_CLIENT_DATA*       clientData,
+                                        STUN_INCOMING_REQ_DATA* pReq,
+                                        const StunMessage*      stunMsg,
+                                        bool                    fromRelay);
 
-void StunClient_clearStats(STUN_CLIENT_DATA *clientData);
-void StunClient_dumpStats(STUN_CLIENT_DATA *clientData, STUN_INFO_FUNC_PTR logPtr, void * userData);
+void
+StunClient_clearStats(STUN_CLIENT_DATA* clientData);
+void
+StunClient_dumpStats(STUN_CLIENT_DATA*  clientData,
+                     STUN_INFO_FUNC_PTR logPtr,
+                     void*              userData);
 
 
 #ifdef __cplusplus
