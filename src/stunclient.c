@@ -427,7 +427,6 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
   /* callback and data (owned by caller) */
   m.stunCbFunc = stunCbFunc;
 
-
   StoreStunBindReq(&trans, &m);
   BuildStunBindReq(&trans, &stunMsg);
 
@@ -1313,7 +1312,7 @@ ICMPRespCallback(STUN_TRANSACTION_DATA* trans,
      trans->stop.tv_usec) -
     (trans->start.tv_sec * 1000000 + trans->start.tv_usec);
 
-  res.retransmits = trans->stats.Retransmits;
+  res.retransmits = trans->retransmits;
   sockaddr_copy( (struct sockaddr*)&res.srcAddr,
                  srcAddr );
 
