@@ -12,15 +12,15 @@
  *
  * Entrypoints:
  *      1. Application calls StunClientBind_startxxxxx() to initiate the
- *stun/ice protocol sequence.
+ * stun/ice protocol sequence.
  *      2. StunClientBind_HandleTick() must be called by appl. every N msec such
- *that it can carry out timing/retransmissions.
+ * that it can carry out timing/retransmissions.
  *      3. Application calls StunClientBind_HandleIncResp() when it detects
- *incoming stun responses in the media RTP/RTCP stream.
+ * incoming stun responses in the media RTP/RTCP stream.
  *
  * Outputs:
  *      1. Application provides function pointer and  data ptr to receive the
- *result of the  stun/ice protocol.
+ * result of the  stun/ice protocol.
  *
  ******************************************************************************/
 
@@ -338,7 +338,9 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 STUN_SENDFUNC          sendFunc,
                                 STUNCB                 stunCbFunc,
                                 DiscussData*           discussData)          /*NULL
+                                                                              *
                                                                               *if
+                                                                              *
                                                                               *none*/
 
 {
@@ -393,7 +395,7 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           STUN_SENDFUNC          sendFunc,
                           STUNCB                 stunCbFunc,
                           DiscussData*           discussData)          /*NULL if
-                                                                        *none*/
+                                                                        * none*/
 
 {
   StunBindReqStuct      m;
@@ -461,7 +463,7 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
          TransIdIsEqual(&msg->msgHdr.id, &trans->stunBindReq.transactionId) )
     {
       StunRespStruct m;
-      gettimeofday(&trans->stop, NULL);
+      gettimeofday(&trans->stop[trans->retransmits], NULL);
       memcpy( &m.stunRespMessage, msg, sizeof(m.stunRespMessage) );
       sockaddr_copy( (struct sockaddr*)&m.srcAddr, srcAddr );
       StunClientMain(clientData, i, StunMsgToInternalStunSig(msg), (void*)&m);
@@ -497,7 +499,7 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
          TransIdIsEqual(&transactionId, &trans->stunBindReq.transactionId) )
     {
       StunRespStruct m;
-      gettimeofday(&trans->stop, NULL);
+      gettimeofday(&trans->stop[trans->retransmits], NULL);
       /* memcpy(&m.stunRespMessage, msg, sizeof(m.stunRespMessage)); */
       sockaddr_copy( (struct sockaddr*)&m.srcAddr, srcAddr );
       m.ICMPtype = ICMPtype;
@@ -570,16 +572,16 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
   {
     mappedAddr.familyType   =  STUN_ADDR_IPv4Family;
     mappedAddr.addr.v4.port = ntohs(
-       ( (struct sockaddr_in*)mappedSockAddr )->sin_port );
+      ( (struct sockaddr_in*)mappedSockAddr )->sin_port);
     mappedAddr.addr.v4.addr = ntohl(
-       ( (struct sockaddr_in*)mappedSockAddr )->sin_addr.s_addr );
+      ( (struct sockaddr_in*)mappedSockAddr )->sin_addr.s_addr);
 
   }
   else if (mappedSockAddr->sa_family == AF_INET6)
   {
     mappedAddr.familyType   =  STUN_ADDR_IPv6Family;
     mappedAddr.addr.v6.port = ntohs(
-       ( (struct sockaddr_in6*)mappedSockAddr )->sin6_port );
+      ( (struct sockaddr_in6*)mappedSockAddr )->sin6_port);
 
     /*TODO: will this be correct ? */
     memcpy( mappedAddr.addr.v6.addr,
@@ -644,9 +646,9 @@ SendConnectivityBindResponse(STUN_CLIENT_DATA*      clientData,
                                   (uint8_t*)stunBuff,
                                   STUN_MAX_PACKET_SIZE,
                                   (unsigned char*)password,           /* md5key
-                                                                       **/
+                                                                      **/
                                   password ? strlen(password) : 0,    /* keyLen
-                                                                       **/
+                                                                      **/
                                   NULL);
   if (!stunLen)
   {
@@ -1033,8 +1035,8 @@ SendStunReq(STUN_TRANSACTION_DATA* trans,
                                                     /* key */
                                                     strlen(trans->stunBindReq.
                                                            password),
-                                                                       /* keyLen
-                                                                        * */
+                                                    /* keyLen
+                                                     * */
                                                     NULL);
   }
   else
@@ -1062,7 +1064,7 @@ SendStunReq(STUN_TRANSACTION_DATA* trans,
   }
 
   /*Store Time so we can messure RTT */
-  gettimeofday(&trans->start, NULL);
+  gettimeofday(&trans->start[trans->retransmits], NULL);
 
   trans->stunBindReq.sendFunc(trans->stunBindReq.sockhandle,
                               trans->stunReqMsgBuf,
@@ -1105,7 +1107,7 @@ static void
 RetransmitLastReq(STUN_TRANSACTION_DATA*   trans,
                   struct sockaddr_storage* destAddr)
 {
-  gettimeofday(&trans->start, NULL);
+  gettimeofday(&trans->start[trans->retransmits+1], NULL);
   trans->stunBindReq.sendFunc(trans->stunBindReq.sockhandle,
                               trans->stunReqMsgBuf,
                               trans->stunReqMsgBufLen,
@@ -1160,7 +1162,8 @@ CommonRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans,
 
   if ( (trans->retransmits < STUNCLIENT_MAX_RETRANSMITS)
        && (stunTimeoutList[trans->retransmits] != 0) ) /* can be 0 terminated if
-                                                        *using fewer retransmits
+                                                        * using fewer
+                                                        *retransmits
                                                         **/
   {
     char peer [SOCKADDR_MAX_STRLEN] = {0,};
@@ -1191,7 +1194,8 @@ CancelRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans)
 
   if ( (trans->retransmits < STUNCLIENT_MAX_RETRANSMITS)
        && (stunTimeoutList[trans->retransmits] != 0) ) /* can be 0 terminated if
-                                                        *using fewer retransmits
+                                                        * using fewer
+                                                        *retransmits
                                                         **/
   {
     StartNextRetransmitTimer(trans);
@@ -1246,7 +1250,17 @@ StoreBindResp(STUN_TRANSACTION_DATA* trans,
   }
 }
 
+static int getRTTvalue(STUN_TRANSACTION_DATA *trans){
+  int32_t stop = (trans->stop[trans->retransmits].tv_sec * 1000000 +
+                  trans->stop[trans->retransmits].tv_usec);
+  //Always use the first stored value for start.
+  int32_t start = (trans->start[0].tv_sec * 1000000 +
+   trans->start[0].tv_usec);
 
+   return stop-start;
+
+
+}
 static void
 BindRespCallback(STUN_TRANSACTION_DATA* trans,
                  const struct sockaddr* srcAddr)
@@ -1270,11 +1284,9 @@ BindRespCallback(STUN_TRANSACTION_DATA* trans,
   sockaddr_copy( (struct sockaddr*)&res.dstBaseAddr,
                  (struct sockaddr*)&trans->stunBindReq.baseAddr );
 
-  res.rtt =
-    (trans->stop.tv_sec * 1000000 +
-     trans->stop.tv_usec) -
-    (trans->start.tv_sec * 1000000 + trans->start.tv_usec);
+  /* So did we loose a packet, or got an answer to the first response?*/
 
+  res.rtt = getRTTvalue(trans);
   res.ttl = trans->stunBindReq.ttl;
 
   StunPrint( client->logUserData, client->Log_cb, StunInfoCategory_Info,
@@ -1307,11 +1319,7 @@ ICMPRespCallback(STUN_TRANSACTION_DATA* trans,
   res.ICMPtype   = trans->ICMPtype;
   res.ttl        = trans->ttl;
 
-  res.rtt =
-    (trans->stop.tv_sec * 1000000 +
-     trans->stop.tv_usec) -
-    (trans->start.tv_sec * 1000000 + trans->start.tv_usec);
-
+  res.rtt = getRTTvalue(trans);
   res.retransmits = trans->retransmits;
   sockaddr_copy( (struct sockaddr*)&res.srcAddr,
                  srcAddr );
@@ -1323,6 +1331,7 @@ ICMPRespCallback(STUN_TRANSACTION_DATA* trans,
              sockaddr_toString( (struct sockaddr*) &res.srcAddr, ip_str,
                                 SOCKADDR_MAX_STRLEN,
                                 true ) );
+
 
   if (trans->stunBindReq.stunCbFunc)
   {

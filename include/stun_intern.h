@@ -7,6 +7,8 @@
 
 #include <sys/time.h>
 
+#include <stunlib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -113,8 +115,8 @@ typedef struct
   uint32_t retransmits;
 
   /* RTT Info */
-  struct timeval start;
-  struct timeval stop;
+  struct timeval start[STUNCLIENT_MAX_RETRANSMITS];
+  struct timeval stop[STUNCLIENT_MAX_RETRANSMITS];
 
   /* icmp */
   uint32_t ICMPtype;
