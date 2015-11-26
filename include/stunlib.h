@@ -165,7 +165,7 @@ extern "C" {
 
 #define IPV4_ADDR_LEN                    16
 #define IPV4_ADDR_LEN_WITH_PORT          (IPV4_ADDR_LEN + 6) /* Need extra space
-                                                              *for :port */
+                                                              * for :port */
 #define IPV6_ADDR_LEN                    100
 
 #define STUN_REQ_TRANSPORT_UDP         (uint32_t)17 /* IANA protocol number */
@@ -186,6 +186,7 @@ extern "C" {
 #define STUNCLIENT_MAX_RETRANSMITS          9
 #define STUNCLIENT_RETRANSMIT_TIMEOUT_LIST      100, 200, 300, 400, 500, 500, \
   500, 500, 500                                                                              /*
+                                                                                              *
                                                                                               *msec
                                                                                               **/
 #define STUNCLIENT_DFLT_TICK_TIMER_MS            50
@@ -193,11 +194,11 @@ extern "C" {
 #define STUN_KEEPALIVE_TIMER_SEC    15
 
 #define TURN_SEND_IND_HDR_SIZE      36  /* fixed overhead when using  TURN send
-                                         *indication  */
+                                         * indication  */
                                         /* hdr(20)+Cookie(8)+Vers(8)+Data(4) */
 #define TURN_INTEG_LEN              24  /* size of integrity attribute */
 #define TURN_CHANNEL_DATA_HDR_SIZE   4  /* overhead when using  TURN channel
-                                         *data     */
+                                         * data     */
 
 #define STUN_MAX_PEER_ADDR          10 /* max no. of peer addresses supported
                                         * (e.g. when encoding  CreatePermission)
@@ -552,29 +553,30 @@ typedef struct
 
 /* Defines how a user of stun sends data on e.g. socket */
 typedef void (* STUN_SENDFUNC)(int                    sockHandle,   /* context -
-                                                                     *e.g.
-                                                                     *socket
-                                                                     *handle */
+                                                                     * e.g.
+                                                                     * socket
+                                                                     * handle */
                                const uint8_t*         buffer,       /* ptr to
-                                                                     *buffer to
-                                                                     *send */
+                                                                     * buffer to
+                                                                     * send */
                                int                    bufLen,       /* length of
-                                                                     *send
-                                                                     *buffer */
+                                                                     * send
+                                                                     * buffer */
                                const struct sockaddr* dstAddr,      /* Optional,
-                                                                     *if
-                                                                     *connected
-                                                                     *to socket
+                                                                     * if
+                                                                     * connected
+                                                                     * to socket
                                                                      **/
                                bool                   useRelay,     /* User
-                                                                     *context
-                                                                     *data.
-                                                                     *Optional
+                                                                     * context
+                                                                     * data.
+                                                                     * Optional
                                                                      **/
                                const uint8_t          ttl);         /* TTL to
-                                                                     *set on IP
-                                                                     *packet, 0
-                                                                     *is ignored
+                                                                     * set on IP
+                                                                     * packet, 0
+                                                                     * is
+                                                                     *ignored
                                                                      **/
 
 /* Defines how errors are reported */
@@ -592,7 +594,7 @@ typedef void (* STUN_ERR_FUNC)(const char* fmt,
 
 /*!
  * STUNLIB_isStunMsg() - use this function to demux STUN messages from a media
- *stream such as RTP or RTCP
+ * stream such as RTP or RTCP
  * \param payload        payload  to check (e.g. as received in RTP stream)
  * \param length         payload length
  * \return               TRUE if message is a STUN message
@@ -603,7 +605,7 @@ stunlib_isStunMsg(const uint8_t* payload,
 
 /*!
  * stunlib_isTurnChannelData - use this function to demux STUN messages from a
- *media stream such as RTP or RTCP
+ * media stream such as RTP or RTCP
  * \param payload        payload  to check (e.g. as received in RTP stream)
  * \return               TRUE if message is TURN Channel Data
  */
@@ -629,9 +631,9 @@ stunlib_DecodeMessage(const uint8_t*  buf,
 
 /*!
  * stunlib_checkIntegrity -  Checks the integrity attribute. Be sure to send in
- *the
+ * the
  *                            correct key. simple Simple password for short
- *term.
+ * term.
  *                            MD5(user:realm:pass) for long term.
  * \param buf             serialised buffer, network order
  * \param buflen          Length of buffer
@@ -656,7 +658,7 @@ stunlib_isRequest(const StunMessage* msg);
 
 /*!
  * STUNLIB_isSuccessResponse() - Test if decoded stun message is a STUN success
- *response
+ * response
  * \param msg            decoded STUN message to check
  * \return               TRUE if message is a success response
  */
@@ -665,7 +667,7 @@ stunlib_isSuccessResponse(const StunMessage* msg);
 
 /*!
  * STUNLIB_isErrorResponse() - Test if decoded stun message is a STUN error
- *response
+ * response
  * \param msg            decoded STUN message to check
  * \return               TRUE if message is an error response
  */
@@ -675,7 +677,7 @@ stunlib_isErrorResponse(const StunMessage* msg);
 
 /*!
  * STUNLIB_isResponse() - Test if decoded stun message is a STUN (success or
- *error) response
+ * error) response
  * \param msg            decoded STUN message to check
  * \return               TRUE if message is a response
  */
@@ -707,19 +709,19 @@ stunlib_decodeTurnChannelNumber(uint16_t*      channelNumber,
 
 /*!
  * stunEncodeMessage() - Encode/serialise a STUN message into buffer from
- *StunMessage struct
+ * StunMessage struct
  * \param message        STUN message to encode
  * \param buf            Buffer to store encoded STUN message in
  * \param bufLen         Length of encoded buffer
  * \param key            Used to calculate message integrity attribute, key in
- *HMAC-SHA1 alg.
+ * HMAC-SHA1 alg.
  *                       For Long term credentials = 128 bit MD5 hash of
- *username+nonce+password. (created using STUNMSG_createMD5Key())
+ * username+nonce+password. (created using STUNMSG_createMD5Key())
  *                       For short term credantials = password
  * \param keyLen         length of key
  * \param verbose        Verbose
  * \return               0 if msg encode fails, else the length of the encoded
- *message (including any padding)
+ * message (including any padding)
  */
 uint32_t
 stunlib_encodeMessage(StunMessage*   message,
@@ -732,7 +734,7 @@ stunlib_encodeMessage(StunMessage*   message,
 
 /* encode a stun keepalive, return the length or 0 if it fails
  * \param usage     - Ice results in  BindingIndication, Outbound results in
- *BindingRequest
+ * BindingRequest
  * \param transId   - ptr to transaction id
  * \param buf       - Buffer to store encoded STUN message in
  * \param bufLen    - Length of encoded buffer
@@ -762,7 +764,7 @@ stunlib_encodeStunKeepAliveResp(StunMsgId*     transId,
  * length fields of Turn Channel Data
  *  \param channelNumber    TURN Channel Number
  *  \param length           Length of application data. (=no. of bytes following
- *ChannelNumber/Length).
+ * ChannelNumber/Length).
  *  \param buf              Destination
  */
 unsigned int
@@ -774,7 +776,7 @@ stunlib_encodeTurnChannelNumber(uint16_t       channelNumber,
  * encode stun sendIndication
  * \param stunbuf       Destination, encoded stun message
  * \param dataBuf       payload. Note use NULL if payload is already inplace in
- *stunBuf (zero copy)
+ * stunBuf (zero copy)
  * \param maxBufSize    Size of destination buffer
  * \param payloadLength Len of data
  * \param dstAddr       Destination
@@ -788,10 +790,10 @@ stunlib_EncodeSendIndication(uint8_t*               stunBuf,
 
 /*
  * encode stun DataIndication (note: only used by a server or for simulating
- *server)
+ * server)
  * \param stunbuf       Destination, encoded stun message
  * \param dataBuf       payload. Note use NULL if payload is already inplace in
- *stunBuf (zero copy)
+ * stunBuf (zero copy)
  * \param maxBufSize    Size of destination buffer
  * \param payloadLength Len of data
  * \param dstAddr       Destination
@@ -811,9 +813,12 @@ stunlib_EncodeDataIndication(uint8_t*               stunBuf,
 void
 stun_printMessage(FILE*              stream,
                   const StunMessage* pMsg);
+void
+stun_printTransId(FILE*            stream,
+                  const StunMsgId* pId);
 
 /* \return random turn channel number in range STUN_MIN_CHANNEL_ID..
- *STUN_MAX_CHANNEL_ID */
+ * STUN_MAX_CHANNEL_ID */
 uint16_t
 stunlib_createRandomTurnChanNum(void);
 
@@ -825,7 +830,7 @@ stunlib_getMessageName(uint16_t msgType);
 
 /*!
  * stunGetErrorReason() - Given an errorClass and number, returns standard
- *reason text
+ * reason text
  * \param errorClass
  * \param errorNumber
  */

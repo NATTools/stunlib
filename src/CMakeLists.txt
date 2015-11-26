@@ -6,6 +6,7 @@ set ( stunlib_srcs
       stunclient.c
       stunlib.c
       turnclient.c
+      stuntrace.c
 )
 
 set (ADDITIONAL_LIBS "")
@@ -25,7 +26,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 find_package( ZLIB REQUIRED )
 if ( ZLIB_FOUND )
     include_directories( ${ZLIB_INCLUDE_DIRS} )
-    list(APPEND ADDITIONAL_LIBS ${ZLIB_LIBRARIES})     
+    list(APPEND ADDITIONAL_LIBS ${ZLIB_LIBRARIES})
 endif( ZLIB_FOUND )
 
 
@@ -36,7 +37,7 @@ if( OPENSSL_FOUND )
 endif( OPENSSL_FOUND )
 
 
-target_link_libraries ( stunlib PRIVATE sockaddrutil 
+target_link_libraries ( stunlib PRIVATE sockaddrutil
                         ${ADDITIONAL_LIBS})
 
 if (coveralls)

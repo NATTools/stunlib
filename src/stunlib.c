@@ -30,13 +30,13 @@
  *
  *  .---------------------.      /|\           /|\
  | STUN Header         |       |             |
- ||---------------------|       |             |
+ |||---------------------|       |             |
  |         ....        |       |--------.    |
  |      N Attributes   |       |        |    |----.
  |         ....        |      \|/       |    |    |
- ||---------------------|                |    |    |
+ |||---------------------|                |    |    |
  |  MESSAGE-INTEGRITY  | <-(HMAC-SHA1)--'   \|/   |
- ||---------------------|                          |
+ |||---------------------|                          |
  |     FINGERPRINT     | <-(CRC-32)---------------'
  |  '---------------------'
  |  </pre>
@@ -377,7 +377,7 @@ stunEncodeIP4AddrAtr(StunAddress4* pAddr,
   write_16(pBuf, attrtype);   /* Attr type */
   write_16(pBuf, 8);          /* Lenght */
   write_16(pBuf, STUN_ADDR_IPv4Family);        /* 8 bit non used, 8 bit for
-                                                *Family */
+                                                * Family */
   write_16(pBuf, pAddr->port);
   write_32(pBuf, pAddr->addr);
   *nBufLen -= 12;
@@ -413,7 +413,7 @@ stunEncodeIP4AddrAtrXOR(StunAddress4* pAddr,
   write_16(pBuf, attrtype);   /* Attr type */
   write_16(pBuf, 8);          /* Length */
   write_16(pBuf, STUN_ADDR_IPv4Family);        /* 8 bit non used, 8 bit for
-                                                *Family */
+                                                * Family */
   write_16_xor(pBuf, pAddr->port, xorId);
   write_32_xor(pBuf, pAddr->addr, xorId);
   *nBufLen -= 12;
@@ -434,7 +434,7 @@ stunEncodeIP6AddrAtr(StunAddress6* pAddr,
   write_16(pBuf, attrtype);   /* Attr type */
   write_16(pBuf, 20);          /* Lenght */
   write_16(pBuf, STUN_ADDR_IPv6Family);        /* 8 bit non used, 8 bit for
-                                                *Family */
+                                                * Family */
   write_16(pBuf, pAddr->port);
   write_8(pBuf, pAddr->addr[0]);
   write_8(pBuf, pAddr->addr[1]);
@@ -474,7 +474,7 @@ stunEncodeIP6AddrAtrXOR(StunAddress6* pAddr,
   write_16(pBuf, attrtype);   /* Attr type */
   write_16(pBuf, 20);          /* Lenght */
   write_16(pBuf, STUN_ADDR_IPv6Family);        /* 8 bit non used, 8 bit for
-                                                *Family (always IPv4) or? */
+                                               * Family (always IPv4) or? */
   write_16_xor(pBuf, pAddr->port, xorId);
   write_8_xor(pBuf, pAddr->addr[0],  xorId);
   write_8_xor(pBuf, pAddr->addr[1],  xorId + 1);
@@ -778,7 +778,7 @@ stunEncodeDataAtr(StunData* pData,
 
   /* If wanting to append data header to front of existing packet (avoid a copy)
    * then StunData struct will have been set-up with just the data len (and the
-   *pData NULL)
+   * pData NULL)
    * it is then assumed that what follows (in *pBuf) is the data.
    */
   if (pData->pData != NULL)
@@ -988,16 +988,16 @@ stunlib_EncodeIndication(uint8_t                msgType,
 
     activeDstAddr.familyType   =  STUN_ADDR_IPv4Family;
     activeDstAddr.addr.v4.port = ntohs(
-       ( (struct sockaddr_in*)dstAddr )->sin_port );
+      ( (struct sockaddr_in*)dstAddr )->sin_port);
     activeDstAddr.addr.v4.addr = ntohl(
-       ( (struct sockaddr_in*)dstAddr )->sin_addr.s_addr );
+      ( (struct sockaddr_in*)dstAddr )->sin_addr.s_addr);
 
   }
   else if (dstAddr->sa_family == AF_INET6)
   {
     activeDstAddr.familyType   =  STUN_ADDR_IPv6Family;
     activeDstAddr.addr.v6.port = ntohs(
-       ( (struct sockaddr_in6*)dstAddr )->sin6_port );
+      ( (struct sockaddr_in6*)dstAddr )->sin6_port);
     memcpy( activeDstAddr.addr.v6.addr,
             ( (struct sockaddr_in6*)dstAddr )->sin6_addr.s6_addr,
             sizeof(activeDstAddr.addr.v6.addr) );
@@ -1015,7 +1015,7 @@ stunlib_EncodeIndication(uint8_t                msgType,
   stunMsg.hasData      = true;
   stunMsg.data.dataLen = payloadLength;
   stunMsg.data.pData   = dataBuf;               /*The data (RTP packet) follows
-                                                 *anyway..*/
+                                                 * anyway..*/
 
   length = stunlib_encodeMessage(&stunMsg,
                                  stunBuf,
@@ -1407,7 +1407,7 @@ stunDecodeErrorAtrAlligned(StunAtrError*   pError,
   }
   read_16(pBuf, &pError->reserved);
   read_8(pBuf, &pError->errorClass);          /* The Error clase, number from
-                                               *1-6 */
+                                               * 1-6 */
   read_8(pBuf, &pError->number);              /* Error number 0-99 */
   read_8n(pBuf, (uint8_t*)pError->reason, atrLen - 4);  /* reason string */
   pError->sizeReason = atrLen - 4;
@@ -1744,6 +1744,17 @@ stun_printData(FILE*           stream,
              pData->dataLen);
 }
 
+void
+stun_printTransId(FILE*     stream,
+                  const StunMsgId* pId)
+{
+  int i;
+  for (i = 0; i < 12; i++)
+  {
+    printError(stream, " %02x", pId->octet[i]);
+  }
+
+}
 
 void
 stun_printMessage(FILE*              stream,
@@ -1760,10 +1771,8 @@ stun_printMessage(FILE*              stream,
     printError(stream, "  msgHdr.type \t= %d\n",   pMsg->msgHdr.msgType);
     printError(stream, "  msgHdr.length \t= %d\n", pMsg->msgHdr.msgLength);
     printError(stream, "  msgHdr.id[] \t = ");
-  for (i = 0; i < 12; i++)
-  {
-    printError(stream, " %02x", pMsg->msgHdr.id.octet[i]);
-  }
+
+    stun_printTransId(stream, &pMsg->msgHdr.id);
     printError(stream, "\n");
 
 
@@ -1886,7 +1895,7 @@ stun_printMessage(FILE*              stream,
   if (message->hasMessageIntegrity)
   {
       printError(stream,
-                         "  integrity.offset = %02u",
+               "  integrity.offset = %02u",
                message->messageIntegrity.offset);
       printError(stream, "  integrity.hash[] = ");
     for (i = 0; i < 20; i++)
@@ -2715,10 +2724,10 @@ stunlib_encodeMessage(StunMessage*   message,
                       unsigned int   keyLen,
                       FILE*          stream)
 {
-  bool     addFingerprint;
-  int      msglen;
-  int      restlen  = bufLen - STUN_HEADER_SIZE; /* Make space for STUN header
-                                                  **/
+  bool addFingerprint;
+  int  msglen;
+  int  restlen      = bufLen - STUN_HEADER_SIZE; /* Make space for STUN header
+                                                 **/
   uint8_t* pCurrPtr = (uint8_t*)buf + STUN_HEADER_SIZE;
 
   if ( !message || !buf || (bufLen < STUN_HEADER_SIZE) )

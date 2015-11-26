@@ -8,6 +8,7 @@
 #include <sys/time.h>
 
 #include <stunlib.h>
+#include "hiut_lib.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,9 +128,7 @@ typedef struct
   DiscussData discussData;
 
   struct StunClientStats stats;
-
   STUN_CLIENT_DATA* client;
-
 
 } STUN_TRANSACTION_DATA;
 
@@ -143,6 +142,7 @@ struct STUN_CLIENT_DATA
   STUN_INFO_FUNC_PTR     Log_cb;
   void*                  logUserData;
   struct StunClientStats stats;
+  struct hiutResult traceResult;
 };
 
 
