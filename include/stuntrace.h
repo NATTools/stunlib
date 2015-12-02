@@ -1,6 +1,7 @@
 #pragma once
 
 #define MAX_TTL 64
+#define MAX_CONCECUTIVE_INACTIVE 4
 
 typedef struct
 {
