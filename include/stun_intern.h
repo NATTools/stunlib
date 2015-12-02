@@ -8,7 +8,7 @@
 #include <sys/time.h>
 
 #include <stunlib.h>
-#include "hiut_lib.h"
+#include "stuntrace.h"
 
 #ifdef __cplusplus
 extern "C" {

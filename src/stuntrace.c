@@ -4,37 +4,48 @@
 #include <string.h>
 
 #include "stunclient.h"
+
 #include "stun_intern.h"
 
+#include "stuntrace.h"
 void
 StunStatusCallBack(void*               userCtx,
                    StunCallBackData_T* stunCbData);
 
 
+
 void
-printResultLine(  int              ttl,
-                struct sockaddr* srcAddr,
-                int              rtt,
-                int              retransmits)
+sendCallback(struct hiutResult* result,
+             struct sockaddr*   addr,
+             uint32_t           hop,
+             uint32_t           rtt,
+             uint32_t           retrans,
+             bool traceEnd,
+             bool done)
 {
-  char addr[SOCKADDR_MAX_STRLEN];
 
+  StunTraceCallBackData_T data;
+  data.nodeAddr    = addr;
+  data.hop         = hop;
+  data.rtt         = rtt;
+  data.retransmits = retrans;
+  data.trace_num   = result->num_traces;
+  data.traceEnd    = traceEnd;
+  data.done        = done;
 
-    printf(" %i %s %i.%ims (%i)", ttl,
-           sockaddr_toString(srcAddr,
-                             addr,
-                             sizeof(addr),
-                             false),
-           rtt / 1000, rtt % 1000,
-           retransmits);
-
-      printf("\n");
+  result->traceCb(result->userCtx, &data);
 }
 
 void
 handleStunNoAnswer(struct hiutResult* result)
 {
-  /* TODO Callbacke here */
+  sendCallback(result,
+               NULL,
+               result->currentTTL,
+               0,
+               0,
+               false,
+               false);
 
   if ( (result->currentTTL < result->user_max_ttl) &&
        (result->currentTTL < result->path_max_ttl) )
@@ -80,12 +91,7 @@ handleStunRespIcmp(struct hiutResult* result,
 {
   if (ttl >= result->user_max_ttl)
   {
-       printResultLine(ttl,
-                      srcAddr,
-                      rtt,
-                      retransmits);
-      printf("Should STOP here...\n");
-     /*
+    /*
      *  stopAndExit(result);
      */
     /* Do callback to user here.. */
@@ -97,14 +103,15 @@ handleStunRespIcmp(struct hiutResult* result,
   {
     if (result->currentTTL < result->user_max_ttl)
     {
-         printResultLine(ttl,
-                       srcAddr,
-                       rtt,
-                       retransmits);
 
-      /* TODO Do a callback here */
-      (void)rtt;
-      (void)retransmits;
+      sendCallback(result,
+                   srcAddr,
+                   ttl,
+                   rtt,
+                   retransmits,
+                   false,
+                 false);
+
       result->currentTTL++;
       while (result->pathElement[result->currentTTL].inactive &&
              result->currentTTL < result->path_max_ttl)
@@ -130,23 +137,25 @@ handleStunRespIcmp(struct hiutResult* result,
                                    result->sendFunc,
                                    StunStatusCallBack,
                                    NULL );
-          }
+      }
     }
   }
   else if ( (ICMPtype == 3) && (srcAddr->sa_family == AF_INET) )
   {
     /*Got port unreachable. We can stop now*/
 
+    bool done = result->num_traces<result->max_recuring? false:true;
     if (result->path_max_ttl >= ttl)
     {
-         printResultLine(ttl,
-                      srcAddr,
-                      rtt,
-                      retransmits);
+      result->path_max_ttl = ttl;
 
-       result->path_max_ttl = ttl;
-
-      /* TODO: Do callback here */
+      sendCallback(result,
+                   srcAddr,
+                   ttl,
+                   rtt,
+                   retransmits,
+                   true,
+                   done);
 
       /* cancel any outstanding transactions */
       for (int i = ttl + 1; i <= result->currentTTL; i++)
@@ -155,9 +164,28 @@ handleStunRespIcmp(struct hiutResult* result,
         StunClient_cancelBindingTransaction( (STUN_CLIENT_DATA*)result->stunCtx,
                                              result->ttlInfo[i].stunMsgId );
       }
-      /* TODO: Do callback here */
-      /* stopAndExit(result); */
+      if(!done){
       result->num_traces++;
+      result->currentTTL = 1;
+      for (int i = 0; i < MAX_TTL; i++)
+    {
+      result->pathElement[i].gotAnswer = false;
+    }
+      StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
+                                 result,
+                                 (struct sockaddr*)&result->remoteAddr,
+                                 (struct sockaddr*)&result->localAddr,
+                                 false,
+                                 result->username,
+                                 result->password,
+                                 result->currentTTL,
+                                 result->ttlInfo[result->currentTTL].stunMsgId,
+                                 result->sockfd,
+                                 result->sendFunc,
+                                 StunStatusCallBack,
+                                 NULL );
+
+      }
     }
   }
   else
@@ -235,7 +263,7 @@ StunStatusCallBack(void*               userCtx,
                    StunCallBackData_T* stunCbData)
 {
   /* char               addr[SOCKADDR_MAX_STRLEN]; */
-    struct hiutResult* result = (struct hiutResult*)userCtx;
+  struct hiutResult* result = (struct hiutResult*)userCtx;
 
   if (result->pathElement[stunCbData->ttl].gotAnswer)
   {
@@ -247,7 +275,7 @@ StunStatusCallBack(void*               userCtx,
   switch (stunCbData->stunResult)
   {
   case StunResult_BindOk:
-      handleStunRespSucsessfull( (struct hiutResult*)userCtx,
+    handleStunRespSucsessfull( (struct hiutResult*)userCtx,
                                stunCbData->ttl,
                                (struct sockaddr*)&stunCbData->srcAddr,
                                (struct sockaddr*)&stunCbData->rflxAddr,
@@ -255,7 +283,7 @@ StunStatusCallBack(void*               userCtx,
                                stunCbData->retransmits );
     break;
   case StunResult_ICMPResp:
-      handleStunRespIcmp( (struct hiutResult*)userCtx,
+    handleStunRespIcmp( (struct hiutResult*)userCtx,
                         stunCbData->ICMPtype,
                         stunCbData->ttl,
                         (struct sockaddr*)&stunCbData->srcAddr,
@@ -263,7 +291,7 @@ StunStatusCallBack(void*               userCtx,
                         stunCbData->retransmits );
     break;
   case StunResult_BindFailNoAnswer:
-      handleStunNoAnswer( (struct hiutResult*)userCtx );
+    handleStunNoAnswer( (struct hiutResult*)userCtx );
     break;
   default:
     printf("Should not happen (Probably a cancel OK)\n");
@@ -275,11 +303,14 @@ StunStatusCallBack(void*               userCtx,
 
 int
 StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
+                     void*                  userCtx,
                      const struct sockaddr* toAddr,
                      const struct sockaddr* fromAddr,
                      uint32_t               sockhandle,
                      const char*            ufrag,
                      const char*            password,
+                     uint32_t               numTraces,
+                     STUN_TRACECB           traceCbFunc,
                      STUN_SENDFUNC          sendFunc)
 {
   struct hiutResult* result;
@@ -288,6 +319,7 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
   result = &clientData->traceResult;
 
   result->currentTTL = 1;
+  result->userCtx = userCtx;
   stunlib_createId(&result->ttlInfo[result->currentTTL].stunMsgId, rand(), 1);
   result->stunCtx = clientData;
   /* Fill inn the hiut struct so we get something back in the CB */
@@ -300,15 +332,16 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
   result->user_max_ttl         = 40;
   result->user_start_ttl       = 1;
   result->wait_ms              = 0;
-  result->max_recuring         = 10;
+  result->max_recuring         = numTraces;
   result->user_paralell_traces = 0;
   result->path_max_ttl         = 255;
   result->num_traces           = 1;
+  result->traceCb              = traceCbFunc;
   result->sendFunc             = sendFunc;
   result->sockfd               = sockhandle;
 
-  strncpy(result->username,    ufrag,    sizeof(result->username) - 1);
-  strncpy(result->password, password,    sizeof(result->password) - 1);
+  strncpy(result->username, ufrag,    sizeof(result->username) - 1);
+  strncpy(result->password, password, sizeof(result->password) - 1);
 
   len = StunClient_startSTUNTrace(result->stunCtx,
                                   result,
