@@ -492,7 +492,7 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
             "<STUNCLIENT> no instance with transId, discarding, msgType %d\n ",
             msg->msgHdr.msgType);
 }
-
+#if 0
 int32_t
 StunClient_getICMPType(struct hiutResult* result,
                        unsigned char*     rcv_message)
@@ -562,14 +562,15 @@ StunClient_getTTL(struct hiutResult* result,
   }
   return 0;
 }
-
+#endif
 void
 StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
                       const struct sockaddr* srcAddr,
-                      unsigned char*         message)
+                      uint32_t               hop,
+                      uint32_t               ICMPtype)
 {
   int i;
-  int ttl = StunClient_getTTL(&clientData->traceResult, message);
+  int ttl = hop;
   if (clientData == NULL)
   {
     return;
@@ -588,7 +589,7 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
       gettimeofday(&trans->stop[trans->retransmits], NULL);
       /* memcpy(&m.stunRespMessage, msg, sizeof(m.stunRespMessage)); */
       sockaddr_copy( (struct sockaddr*)&m.srcAddr, srcAddr );
-      m.ICMPtype = StunClient_getICMPType(&clientData->traceResult, message);
+      m.ICMPtype = ICMPtype;
       m.ttl      = ttl;
       StunClientMain(clientData, i, STUN_SIGNAL_ICMPResp, (void*)&m);
       return;

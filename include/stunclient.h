@@ -226,8 +226,9 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
 void
 StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
                       const struct sockaddr* srcAddr,
-                      unsigned char*         message);
-
+                      uint32_t               hop,
+                      uint32_t               ICMPtype);
+                      
 /*
  * Cancel a transaction with  matching  transaction id
  *      transactionId  - Transaction id.
