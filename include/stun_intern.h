@@ -72,6 +72,7 @@ typedef struct {
   STUNCB                  stunCbFunc;
   DiscussData*            discussData;    /*NULL allowed if none present */
   bool                    addSoftware;
+  bool                    stuntrace;
 } StunBindReqStuct;
 
 struct StunClientStats

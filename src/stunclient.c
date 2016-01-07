@@ -45,6 +45,9 @@
 static const uint32_t stunTimeoutList[STUNCLIENT_MAX_RETRANSMITS] =
 { STUNCLIENT_RETRANSMIT_TIMEOUT_LIST};
 
+static const uint32_t stuntraceTimeoutList[STUNTRACE_MAX_RETRANSMITS] =
+{ STUNTRACE_RETRANSMIT_TIMEOUT_LIST};
+
 /* forward declarations of statics */
 static void
 StunClientMain(STUN_CLIENT_DATA* clientData,
@@ -444,6 +447,7 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
   m.addSoftware   = false;
   /* callback and data (owned by caller) */
   m.stunCbFunc = stunCbFunc;
+  m.stuntrace = true;
 
   StoreStunBindReq(&trans, &m);
   BuildStunBindReq(&trans, &stunMsg);
@@ -492,77 +496,7 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
             "<STUNCLIENT> no instance with transId, discarding, msgType %d\n ",
             msg->msgHdr.msgType);
 }
-#if 0
-int32_t
-StunClient_getICMPType(struct hiutResult* result,
-                       unsigned char*     rcv_message)
-{
 
-  if (result->localAddr.ss_family == AF_INET)
-  {
-    struct ip*   ip_packet;
-    struct icmp* icmp_packet;
-    ip_packet   = (struct ip*) rcv_message;
-    icmp_packet =
-      (struct icmp*) ( rcv_message + (ip_packet->ip_hl << 2) );
-
-    return icmp_packet->icmp_type;
-  }
-  else
-  {
-    struct icmp6_hdr* icmp_hdr;
-    icmp_hdr = (struct icmp6_hdr*) rcv_message;
-    return icmp_hdr->icmp6_type;
-
-  }
-
-}
-
-
-int32_t
-StunClient_getTTL(struct hiutResult* result,
-                  unsigned char*     rcv_message)
-{
-
-  if (result->localAddr.ss_family == AF_INET)
-  {
-    int32_t      ttl;
-    struct ip*   ip_packet, * inner_ip_packet;
-    struct icmp* icmp_packet;
-    ip_packet   = (struct ip*) rcv_message;
-    icmp_packet =
-      (struct icmp*) ( rcv_message + (ip_packet->ip_hl << 2) );
-    inner_ip_packet = &icmp_packet->icmp_ip;
-
-    ttl = (inner_ip_packet->ip_len - result->stunLen - 24) / 4;
-    return ttl;
-  }
-  else
-  {
-    int32_t           ttl_v6;
-    uint16_t          paylen;
-    uint32_t          stunlen;
-    struct ip6_hdr*   inner_ip_hdr;
-    struct icmp6_hdr* icmp_hdr;
-    icmp_hdr     = (struct icmp6_hdr*) rcv_message;
-    inner_ip_hdr = (struct ip6_hdr*)rcv_message + 8;
-
-    paylen  = ntohs(inner_ip_hdr->ip6_plen);
-    stunlen = result->stunLen + 4;
-
-    /*FIX me*/
-    if (icmp_hdr->icmp6_type != 3)
-    {
-      return 0;
-    }
-
-    ttl_v6 = (paylen - stunlen) / 4;
-
-    return ttl_v6;
-  }
-  return 0;
-}
-#endif
 void
 StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
                       const struct sockaddr* srcAddr,
@@ -570,7 +504,8 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
                       uint32_t               ICMPtype)
 {
   int i;
-  int ttl = hop;
+  //int ttl = hop;
+  (void)hop;
   if (clientData == NULL)
   {
     return;
@@ -582,7 +517,7 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
-         TransIdIsEqual(&clientData->traceResult.ttlInfo[ttl].stunMsgId,
+         TransIdIsEqual(&clientData->traceResult.currStunMsgId,
                         &trans->stunBindReq.transactionId) )
     {
       StunRespStruct m;
@@ -590,7 +525,7 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
       /* memcpy(&m.stunRespMessage, msg, sizeof(m.stunRespMessage)); */
       sockaddr_copy( (struct sockaddr*)&m.srcAddr, srcAddr );
       m.ICMPtype = ICMPtype;
-      m.ttl      = ttl;
+      m.ttl      = clientData->traceResult.currentTTL;
       StunClientMain(clientData, i, STUN_SIGNAL_ICMPResp, (void*)&m);
       return;
 
@@ -1210,16 +1145,26 @@ static void
 StartFirstRetransmitTimer(STUN_TRANSACTION_DATA* trans)
 {
   trans->retransmits = 0;
+  if(trans->stunBindReq.stuntrace){
+    StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
+               stuntraceTimeoutList[trans->retransmits]);
+  }else{
   StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
              stunTimeoutList[trans->retransmits]);
+  }
 }
 
 
 static void
 StartNextRetransmitTimer(STUN_TRANSACTION_DATA* trans)
 {
+  if(trans->stunBindReq.stuntrace){
+    StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
+               stuntraceTimeoutList[trans->retransmits]);
+  }else{
   StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
              stunTimeoutList[trans->retransmits]);
+           }
 }
 
 
@@ -1249,7 +1194,15 @@ CommonRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans,
 {
   STUN_CLIENT_DATA* client = trans->client;
 
-  if ( (trans->retransmits < STUNCLIENT_MAX_RETRANSMITS)
+  uint32_t max;
+
+  if(trans->stunBindReq.stuntrace){
+    max = STUNTRACE_MAX_RETRANSMITS;
+  }else{
+    max = STUNCLIENT_MAX_RETRANSMITS;
+  }
+
+  if ( (trans->retransmits < max)
        && (stunTimeoutList[trans->retransmits] != 0) ) /* can be 0 terminated if
                                                         * using fewer
                                                         * retransmits

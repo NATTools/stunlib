@@ -56,7 +56,7 @@ resartIfNotDone(struct hiutResult* result)
                                result->username,
                                result->password,
                                result->currentTTL,
-                               result->ttlInfo[result->currentTTL].stunMsgId,
+                               result->currStunMsgId,
                                result->sockfd,
                                result->sendFunc,
                                StunStatusCallBack,
@@ -134,7 +134,7 @@ handleStunNoAnswer(struct hiutResult* result)
       result->currentTTL++;
     }
 
-    stunlib_createId(&result->ttlInfo[result->currentTTL].stunMsgId,
+    stunlib_createId(&result->currStunMsgId,
                      rand(), result->currentTTL);
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
@@ -144,7 +144,7 @@ handleStunNoAnswer(struct hiutResult* result)
                                result->username,
                                result->password,
                                result->currentTTL,
-                               result->ttlInfo[result->currentTTL].stunMsgId,
+                               result->currStunMsgId,
                                result->sockfd,
                                result->sendFunc,
                                StunStatusCallBack,
@@ -201,7 +201,7 @@ handleStunRespIcmp(struct hiutResult* result,
                      false,
                      false);
 
-        stunlib_createId(&result->ttlInfo[result->currentTTL].stunMsgId,
+        stunlib_createId(&result->currStunMsgId,
                          rand(), result->currentTTL);
 
         StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
@@ -212,7 +212,7 @@ handleStunRespIcmp(struct hiutResult* result,
                                    result->username,
                                    result->password,
                                    result->currentTTL,
-                                   result->ttlInfo[result->currentTTL].stunMsgId,
+                                   result->currStunMsgId,
                                    result->sockfd,
                                    result->sendFunc,
                                    StunStatusCallBack,
@@ -254,7 +254,7 @@ handleStunRespIcmp(struct hiutResult* result,
       {
         printf("Canceling transaction (%i)\n", i);
         StunClient_cancelBindingTransaction( (STUN_CLIENT_DATA*)result->stunCtx,
-                                             result->ttlInfo[i].stunMsgId );
+                                             result->currStunMsgId );
       }
       resartIfNotDone(result);
 
@@ -310,7 +310,7 @@ handleStunRespSucsessfull(struct hiutResult* result,
     {
       result->currentTTL++;
     }
-    stunlib_createId(&result->ttlInfo[result->currentTTL].stunMsgId,
+    stunlib_createId(&result->currStunMsgId,
                      rand(), result->currentTTL);
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
@@ -320,7 +320,7 @@ handleStunRespSucsessfull(struct hiutResult* result,
                                result->username,
                                result->password,
                                result->currentTTL,
-                               result->ttlInfo[result->currentTTL].stunMsgId,
+                               result->currStunMsgId,
                                result->sockfd,
                                result->sendFunc,
                                StunStatusCallBack,
@@ -340,7 +340,7 @@ StunStatusCallBack(void*               userCtx,
 
   if (result->pathElement[stunCbData->ttl].gotAnswer)
   {
-    printf("Got his one already! Ignoring (%i)\n", stunCbData->ttl);
+    printf("Got this one already! Ignoring (%i)\n", stunCbData->ttl);
     return;
   }
   result->pathElement[stunCbData->ttl].gotAnswer = true;
@@ -393,7 +393,7 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
 
   result->currentTTL = 1;
   result->userCtx    = userCtx;
-  stunlib_createId(&result->ttlInfo[result->currentTTL].stunMsgId, rand(), 1);
+  stunlib_createId(&result->currStunMsgId, rand(), 1);
   result->stunCtx = clientData;
   /* Fill inn the hiut struct so we get something back in the CB */
   /* TODO: Fix the struct so we do not store information twice!! */
@@ -424,7 +424,7 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
                                   result->username,
                                   result->password,
                                   result->currentTTL,
-                                  result->ttlInfo[result->currentTTL].stunMsgId,
+                                  result->currStunMsgId,
                                   result->sockfd,
                                   result->sendFunc,
                                   StunStatusCallBack,

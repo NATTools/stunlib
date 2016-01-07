@@ -3,6 +3,9 @@
 #define MAX_TTL 64
 #define MAX_CONCECUTIVE_INACTIVE 4
 
+#define STUNTRACE_MAX_RETRANSMITS          3
+#define STUNTRACE_RETRANSMIT_TIMEOUT_LIST      2000, 2000, 2000
+
 typedef struct
 {
 
@@ -20,13 +23,14 @@ typedef struct
 typedef void (* STUN_TRACECB)(void*                    userCtx,
                               StunTraceCallBackData_T* stunCbData);
 
-
+#if 0
 struct hiutTTLinfo {
   /* int ttl; */
   /* int messageSize; */
   StunMsgId stunMsgId;
 
 };
+#endif
 
 struct hiutPathElement {
   bool                    gotAnswer;
@@ -46,6 +50,7 @@ struct hiutResult {
 
 
   int32_t currentTTL;
+  StunMsgId currStunMsgId;
   int32_t user_start_ttl;
   int32_t user_max_ttl;
   int32_t user_paralell_traces;
@@ -59,7 +64,7 @@ struct hiutResult {
   /* Initial Length of first STUN packet (TTL=1) */
   uint32_t               stunLen;
   struct hiutPathElement pathElement[MAX_TTL];
-  struct hiutTTLinfo     ttlInfo[MAX_TTL];
+  //struct hiutTTLinfo     ttlInfo[MAX_TTL];
   /* struct npa_trace       trace; */
 
   /* Recurring traces*/
