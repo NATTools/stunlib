@@ -500,12 +500,9 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
 void
 StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
                       const struct sockaddr* srcAddr,
-                      uint32_t               hop,
                       uint32_t               ICMPtype)
 {
   int i;
-  //int ttl = hop;
-  (void)hop;
   if (clientData == NULL)
   {
     return;
