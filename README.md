@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/NPPT/sockaddrutil.svg?branch=master)](https://travis-ci.org/NPPT/stunlib)
-[![Coverage Status](https://coveralls.io/repos/NPPT/stunlib/badge.svg?branch=master)](https://coveralls.io/r/NPPT/stunlib?branch=master)
+[![Build Status](https://travis-ci.org/NATTools/sockaddrutil.svg?branch=master)](https://travis-ci.org/NATTools/stunlib)
+[![Coverage Status](https://coveralls.io/repos/NATTools/stunlib/badge.svg?branch=master)](https://coveralls.io/r/NATTools/stunlib?branch=master)
 
 # stunlib
 STUN and TURN implementation
