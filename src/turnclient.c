@@ -10,70 +10,71 @@
  *
  * Entrypoints:
  *   1. Appl. calls TurnClient_startAllocateTransaction() to initiate the turn
- *protocol sequence.
+ *      protocol sequence.
  *   2. Appl. calls TurnClient_HandleTick() every N msec such that it can carry
- *out timing/retransmissions.
+ *      out timing/retransmissions.
  *   3. Appl. calls TurnClient_HandleIncResp() when it detects incoming turn
- *responses in the media RTP/RTCP stream.
+ *      responses in the media RTP/RTCP stream.
  *   3. Appl. calls TurnClient_StartCreatePermissionReq() so that  stun probes
- *can go thru the TURN server
+ *      can go thru the TURN server
  *   4. Appl. optionally calls TurnClient_StartChannelBindReq() to optimise
- *relay traffic
+ *      relay traffic
  *   6. Application calls TurnClient_Deallocate() to release the allocation
  *
  * Outputs:
  *      1. Application provides function pointer and  data ptr to receive the
- *result of the  turn protocol.
+ * result of the  turn protocol.
  *
  *
  *
  *
  *           ------------
  *   ------>|    IDLE    |<----------------------------
- |        ------------                             |
- |             |                                   |
- |             |                                   |
- |             |                                   |
- ||(Error)  ----------                              |
- |        |   WAIT   |<--                          |
- ||--------|   ALLOC  |   | (T (Retries))           |
- |        |   RESP   |   |                         |
- |        |  NOT_AUT |---                          |
- |         ----------                              |
- |             |                                   |
- |             | (Auth_Failure (401))              |
- |             |                                   |
- |        -----------                              |
- |        |   WAIT   |<--                          |
- ||(Error) |   ALLOC  |   | (T (Retries))           |
- |   --------|   RESP   |---                          |
- |            ----------                              |
- |                                   |
- | (Allocate_Response)               |
- |                                   |
- |           -------------                           -----------
- |             |                         | WAIT      |
- |  ALLOCATED  |------------------------>| RELEASE   |
- |             |                         | RESP      |
- |           -------------                           -----------
- |                ^
- |
- ||-------------------------
- |            |           |
- |            |           |
- |                v            v           v
- |          ------------   ----------   -----------
- |    WAIT   |  | WAIT     | | WAIT      |
- ||PERMISSION |  | CHANBIND | | REFRESH   |
- |    RESP   |  | RESP     | | RESP      |
- |          ------------   ----------   -----------
- |
+ *           ------------                             |
+ *                |                                   |
+ *                |                                   |
+ *                |                                   |
+ *   (Error)  ----------                              |
+ *           |   WAIT   |<--                          |
+ *  |--------|   ALLOC  |   | (T (Retries))           |
+ *  |        |   RESP   |   |                         |
+ *  |        |  NOT_AUT |---                          |
+ *  |         ----------                              |
+ *  |             |                                   |
+ *  |             | (Auth_Failure (401))              |
+ *  |             |                                   |
+ *  |        -----------                              |
+ *  |        |   WAIT   |<--                          |
+ *  |(Error) |   ALLOC  |   | (T (Retries))           |
+ *   --------|   RESP   |---                          |
+ *            ----------                              |
+ *                |                                   |
+ *                | (Allocate_Response)               |
+ *                |                                   |
+ *        |-------------                           -----------
+ *        |             |                         | WAIT      |
+ *        |  ALLOCATED  |------------------------>| RELEASE   |
+ *        |             |                         | RESP      |
+ *        | -------------                           -----------
+ *                ^
+ *                |
+ *                |-------------------------
+ *                |            |           |
+ *                |            |           |
+ *                v            v           v
+ *         |------------   ----------   -----------
+ *         |    WAIT   |  | WAIT     | | WAIT      |
+ *         |PERMISSION |  | CHANBIND | | REFRESH   |
+ *         |    RESP   |  | RESP     | | RESP      |
+ *         |------------   ----------   -----------
+ *
  ******************************************************************************/
 
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdliB.h>
 #include <stdarg.h>
+#include <string.h>
 
 
 
@@ -396,7 +397,7 @@ ChannelBindReqParamsOk(TURN_INSTANCE_DATA*    pInst,
 
 {
   if ( !IsValidBindChannelNumber(channelNumber) )  /* channel number ignored if
-                                                    *creating a permission */
+                                                    * creating a permission */
   {
       TurnPrint(pInst,
               TurnInfoCategory_Error,
@@ -447,6 +448,23 @@ TurnClient_StartChannelBindReq(TURN_INSTANCE_DATA*    pInst,
                                uint16_t               channelNumber,
                                const struct sockaddr* peerTrnspAddr)
 {
+
+
+  if ( (pInst->channelBindInfo.channelNumber > 0) &&
+       sockaddr_isSet( (struct sockaddr*)&pInst->channelBindInfo.peerTrnspAddr )
+       &&
+       peerTrnspAddr &&
+       ( sockaddr_sameAddr( (struct sockaddr*)&pInst->channelBindInfo.
+                            peerTrnspAddr,
+                            (struct sockaddr*)peerTrnspAddr ) ) )
+  {
+    TurnPrint(pInst,
+              TurnInfoCategory_Trace,
+              "<TURNCLIENT:%lu>  ChannelBindReq ignored, same peer as before",
+              pInst->id);
+    return false;
+  }
+
   if ( ChannelBindReqParamsOk(pInst, channelNumber, peerTrnspAddr) )
   {
     TurnChannelBindInfo_T msg;
@@ -461,6 +479,27 @@ TurnClient_StartChannelBindReq(TURN_INSTANCE_DATA*    pInst,
   return false;
 }
 
+bool
+TurnClient_hasBeenRedirected(TURN_INSTANCE_DATA* pInst)
+{
+  if (pInst)
+  {
+    return pInst->redirected;
+  }
+
+  return false;
+}
+
+const struct sockaddr*
+TurnClient_getRedirectedServerAddr(TURN_INSTANCE_DATA* pInst)
+{
+  if (pInst && pInst->redirected)
+  {
+    return (const struct sockaddr*) &pInst->turnAllocateReq.serverAddr;
+  }
+
+  return NULL;
+}
 
 bool
 TurnClient_StartCreatePermissionReq(TURN_INSTANCE_DATA*    pInst,
@@ -535,7 +574,7 @@ TurnClient_HandleIncResp(TURN_INSTANCE_DATA* pInst,
   }
 
   /* context known, just check transId matches last sent request on this
-   *instance */
+   * instance */
   if ( TransIdIsEqual(&msg->msgHdr.id, &pInst->StunReqTransId) )
   {
     char tmp[TURN_TRANSID_BUFFER_SIZE];
@@ -1238,7 +1277,7 @@ BuildInitialAllocateReq(TURN_INSTANCE_DATA* pInst,
   {
     pReq->hasEvenPort       = true;
     pReq->evenPort.evenPort = 0x80;  /* Set the R bit to reserve the next
-                                      *port;*/
+                                      * port;*/
   }
   else if (pInst->turnAllocateReq.reservationToken > 0)
   {
@@ -1264,7 +1303,7 @@ BuildInitialAllocateReq(TURN_INSTANCE_DATA* pInst,
  * Initial request has been sent. TURN server has replies with
  * Error(401=NotAuth, Realm, Nonce).
  * Rebuild the AllocateReq as above but add Realm,Nonce,UserName. Calculate
- *MD5Key and add it.
+ * MD5Key and add it.
  */
 static void
 BuildNewAllocateReq(TURN_INSTANCE_DATA* pInst,
@@ -1286,7 +1325,7 @@ BuildNewAllocateReq(TURN_INSTANCE_DATA* pInst,
   {
     pReq->hasEvenPort       = true;
     pReq->evenPort.evenPort = 0x80;  /* Set the R bit to reserve the next
-                                      *port;*/
+                                      * port;*/
   }
   else if (pInst->turnAllocateReq.reservationToken > 0)
   {
@@ -1357,16 +1396,16 @@ BuildChannelBindReq(TURN_INSTANCE_DATA* pInst,
 
     peerTrnspAddr.familyType   =  STUN_ADDR_IPv4Family;
     peerTrnspAddr.addr.v4.port = ntohs(
-       ( (struct sockaddr_in*)peerAddr )->sin_port );
+      ( (struct sockaddr_in*)peerAddr )->sin_port);
     peerTrnspAddr.addr.v4.addr = ntohl(
-       ( (struct sockaddr_in*)peerAddr )->sin_addr.s_addr );
+      ( (struct sockaddr_in*)peerAddr )->sin_addr.s_addr);
 
   }
   else if (peerAddr->sa_family == AF_INET6)
   {
     peerTrnspAddr.familyType   =  STUN_ADDR_IPv6Family;
     peerTrnspAddr.addr.v6.port = ntohs(
-       ( (struct sockaddr_in6*)peerAddr )->sin6_port );
+      ( (struct sockaddr_in6*)peerAddr )->sin6_port);
     memcpy( peerTrnspAddr.addr.v6.addr,
             ( (struct sockaddr_in6*)peerAddr )->sin6_addr.s6_addr,
             sizeof(peerTrnspAddr.addr.v6.addr) );
@@ -1410,16 +1449,16 @@ BuildCreatePermReq(TURN_INSTANCE_DATA* pInst,
 
       peerTrnspAddr.familyType   =  STUN_ADDR_IPv4Family;
       peerTrnspAddr.addr.v4.port = ntohs(
-         ( (struct sockaddr_in*)peerAddr )->sin_port );
+        ( (struct sockaddr_in*)peerAddr )->sin_port);
       peerTrnspAddr.addr.v4.addr = ntohl(
-         ( (struct sockaddr_in*)peerAddr )->sin_addr.s_addr );
+        ( (struct sockaddr_in*)peerAddr )->sin_addr.s_addr);
 
     }
     else if (peerAddr->sa_family == AF_INET6)
     {
       peerTrnspAddr.familyType   =  STUN_ADDR_IPv6Family;
       peerTrnspAddr.addr.v6.port = ntohs(
-         ( (struct sockaddr_in6*)peerAddr )->sin6_port );
+        ( (struct sockaddr_in6*)peerAddr )->sin6_port);
       memcpy( peerTrnspAddr.addr.v6.addr,
               ( (struct sockaddr_in6*)peerAddr )->sin6_addr.s6_addr,
               sizeof(peerTrnspAddr.addr.v6.addr) );
@@ -1441,7 +1480,7 @@ BuildCreatePermReq(TURN_INSTANCE_DATA* pInst,
 
 
 /* send stun keepalive (BindingInd) to keep NAT binding open (fire and forget)
- **/
+**/
 static void
 SendStunKeepAlive(TURN_INSTANCE_DATA* pInst)
 {
@@ -1475,7 +1514,7 @@ GetServerAddrFromAltServer(TURN_INSTANCE_DATA* pInst,
     {
 
       sockaddr_initFromIPv4Int(
-         (struct sockaddr_in*)&pInst->turnAllocateReq.serverAddr,
+        (struct sockaddr_in*)&pInst->turnAllocateReq.serverAddr,
         htonl(pResp->alternateServer.addr.v4.addr),
         htons(pResp->alternateServer.addr.v4.port) );
 
@@ -1485,7 +1524,7 @@ GetServerAddrFromAltServer(TURN_INSTANCE_DATA* pInst,
     else if (pResp->alternateServer.familyType == STUN_ADDR_IPv6Family)
     {
       sockaddr_initFromIPv6Int(
-         (struct sockaddr_in6*)&pInst->turnAllocateReq.serverAddr,
+        (struct sockaddr_in6*)&pInst->turnAllocateReq.serverAddr,
         pResp->alternateServer.addr.v6.addr,
         htons(pResp->alternateServer.addr.v6.port) );
       return true;
@@ -1590,7 +1629,7 @@ HandleStunAllocateResponseMsg(TURN_INSTANCE_DATA* pInst,
 }
 
 /* signal the result of allocation back via callback using data supplied by
- *client */
+ * client */
 static void
 AllocateResponseCallback(TURN_INSTANCE_DATA* pInst)
 {
@@ -1936,8 +1975,8 @@ CommonRetryTimeoutHandler(TURN_INSTANCE_DATA* pInst,
 
   if ( (pInst->retransmits < STUNCLIENT_MAX_RETRANSMITS)
        && (stunTimeoutList[pInst->retransmits] != 0) )  /* can be 0 terminated
-                                                         *if using fewer
-                                                         *retransmits */
+                                                         * if using fewer
+                                                         * retransmits */
   {
     char tmp[TURN_TRANSID_BUFFER_SIZE];
     TurnTransactionIdString(tmp,
@@ -2077,6 +2116,7 @@ TurnState_WaitAllocRespNotAut(TURN_INSTANCE_DATA* pInst,
         InitRetryCounters(pInst);
         SendTurnReq(pInst, &stunReqMsg);
         StartFirstRetransmitTimer(pInst);
+        pInst->redirected = true;
       }
       else
       {
@@ -2114,7 +2154,7 @@ TurnState_WaitAllocRespNotAut(TURN_INSTANCE_DATA* pInst,
   }         /* TURN_SIGNAL_AllocateRespError */
 
   case TURN_SIGNAL_AllocateResp:         /* e.g if authentication is not
-                                          *necessary */
+                                          * necessary */
   {
     StunMessage* pResp = (StunMessage*)payload;
 
@@ -2424,8 +2464,9 @@ TurnState_WaitAllocRefreshResp(TURN_INSTANCE_DATA* pInst,
     if ( CheckRefreshRespError(pInst, pResp) )
     {
       StartFirstRetransmitTimer(pInst);              /* store new nonce and
-                                                      *realm, recalculate and
-                                                      *resend channel refresh */
+                                                      * realm, recalculate and
+                                                      * resend channel refresh
+                                                      **/
       TurnPrint( pInst, TurnInfoCategory_Info, "<TURNCLIENT:%d> Stale Nonce %d",
                  pInst->id, GetErrCode(pResp) );
 
@@ -2614,7 +2655,7 @@ TurnState_WaitCreatePermResp(TURN_INSTANCE_DATA* pInst,
       StunMessage stunReqMsg;
 
       /* store new nonce and realm, recalculate and resend CreatePermissionReq
-       **/
+      **/
       StartFirstRetransmitTimer(pInst);
       TurnPrint( pInst, TurnInfoCategory_Info, "<TURNCLIENT:%d> Stale Nonce %d",
                  pInst->id, GetErrCode(pResp) );
@@ -2628,7 +2669,7 @@ TurnState_WaitCreatePermResp(TURN_INSTANCE_DATA* pInst,
       TurnPrint( pInst, TurnInfoCategory_Error,
                  "<TURNCLIENT:%d> WaitCreatePermResp got ErrorCode %d",
                  pInst->id, GetErrCode(
-                    (StunMessage*)payload ) );
+                   (StunMessage*)payload) );
       SetNextState(pInst, HandlePendingChannelBindReq(
                      pInst) ? TURN_STATE_WaitChanBindResp : TURN_STATE_Allocated);
       CallBack(pInst, TurnResult_PermissionRefreshFail);
@@ -2689,9 +2730,9 @@ TurnState_WaitCreatePermResp(TURN_INSTANCE_DATA* pInst,
 
 /* Refresh(0) sent. Waiting for  Resp.
  * Note that in many cases (unfortunately) the socket gets closed by the
- *application after sending the Refresh(0).
+ * application after sending the Refresh(0).
  * This means that ResfreshResp will not be received. So hence use a relatively
- *short timer to get back to idle quick
+ * short timer to get back to idle quick
  * and not lock up resources.
  */
 static void
@@ -2791,12 +2832,13 @@ TurnClient_HasBoundChannel(TURN_INSTANCE_DATA* inst)
 
 /* send media (via turnserver) to peer */
 bool
-TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
-                      uint8_t*               buf,
-                      size_t                 bufSize,
-                      uint32_t               dataLen,
-                      uint32_t               offset,
-                      const struct sockaddr* peerAddr)
+TurnClient_SendPacket(TURN_INSTANCE_DATA* pInst,
+                      uint8_t*            buf,
+                      size_t              bufSize,
+                      uint32_t            dataLen,
+                      uint32_t            offset,
+                      const struct sockaddr* peerAddr,
+                      bool                needChannelDataPadding)
 {
   uint8_t* payload            = buf + offset;
   uint32_t turnSendIndHdrSize = TURN_SEND_IND_HDR_SIZE;
@@ -2808,7 +2850,7 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
     {
       /* overwrite part of offset data with turn header */
       stunlib_encodeTurnChannelNumber(
-         (uint16_t)pInst->channelBindInfo.channelNumber,
+        (uint16_t)pInst->channelBindInfo.channelNumber,
         dataLen,
         (uint8_t*)(payload -
                    TURN_CHANNEL_DATA_HDR_SIZE) );
@@ -2817,14 +2859,21 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
     else
     {
       /* shift buffer TURN_CHANNEL_DATA_HDR_SIZE bytes to make room for turn
-       *header */
+       * header */
       memmove(payload + TURN_CHANNEL_DATA_HDR_SIZE, payload, dataLen);
       stunlib_encodeTurnChannelNumber(
-         (uint16_t)pInst->channelBindInfo.channelNumber,
+        (uint16_t)pInst->channelBindInfo.channelNumber,
         dataLen,
-        (uint8_t*)payload );
+        (uint8_t*)payload);
     }
     dataLen += TURN_CHANNEL_DATA_HDR_SIZE;
+    if (needChannelDataPadding)
+    {
+      while (dataLen & 3)
+      {
+        buf[offset + dataLen++] = 0;
+      }
+    }
   }
 
   /* Encapsulate in a send indication */
@@ -2889,12 +2938,13 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
                                     &decodedLength,
                                     media);
 
-    if (channelNumber != pInst->channelBindInfo.channelNumber)
+    if ( (channelNumber != pInst->channelBindInfo.channelNumber) ||
+         (decodedLength > *length - 4) )
     {
       return false;
     }
 
-    *length -= 4;
+    *length = decodedLength;
     memmove(media, media + 4, *length);
 
     if (peerAddr)

@@ -5,7 +5,7 @@
 #define TURNCLIENT_H
 
 
-#include <string.h>
+//#include <string.h>
 #include <netinet/in.h>
 
 #include "stunlib.h"   /* stun enc/dec and msg formats*/
@@ -206,7 +206,7 @@ TurnClient_StartChannelBindReq(TURN_INSTANCE_DATA*    inst,
  *
  *     instance         -  instance pointer
  *     noOfPeers        - Number of peer addresses in peerTrnspAddrStr string
- *array
+ *                        array
  *     peerTrnspAddrStr - Pointer to array of strings in format "a.b.c.d:port".
  *Note - Port is not used in create permission.
  *
@@ -254,7 +254,8 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    inst,
                       size_t                 bufSize,
                       uint32_t               dataLen,
                       uint32_t               offset,
-                      const struct sockaddr* peerAddr);
+                      const struct sockaddr* peerAddr,
+                      bool needChannelDataPadding);
 
 /*
  * handle received turn packets
@@ -278,6 +279,10 @@ bool
 TurnClient_HandleIncResp(TURN_INSTANCE_DATA* inst,
                          StunMessage*        msg,
                          uint8_t*            buf);
+
+bool TurnClient_hasBeenRedirected(TURN_INSTANCE_DATA *pInst);
+const struct sockaddr * TurnClient_getRedirectedServerAddr(TURN_INSTANCE_DATA *pInst);
+
 
 
 /* management */

@@ -29,19 +29,19 @@
  *  <pre>
  *
  *  .---------------------.      /|\           /|\
- | STUN Header         |       |             |
- |||---------------------|       |             |
- |         ....        |       |--------.    |
- |      N Attributes   |       |        |    |----.
- |         ....        |      \|/       |    |    |
- |||---------------------|                |    |    |
- |  MESSAGE-INTEGRITY  | <-(HMAC-SHA1)--'   \|/   |
- |||---------------------|                          |
- |     FINGERPRINT     | <-(CRC-32)---------------'
- |  '---------------------'
- |  </pre>
- |
- |  (ASCII art from Alfred E. Heggestad (libre)  (BSD license)
+ *  | STUN Header         |       |             |
+ *  |---------------------|       |             |
+ *  |         ....        |       |--------.    |
+ *  |      N Attributes   |       |        |    |----.
+ *  |         ....        |      \|/       |    |    |
+ *  |---------------------|                |    |    |
+ *  |  MESSAGE-INTEGRITY  | <-(HMAC-SHA1)--'   \|/   |
+ *  |---------------------|                          |
+ *  |     FINGERPRINT     | <-(CRC-32)---------------'
+ *  '---------------------'
+ *  |  </pre>
+ *  |
+ *  |  (ASCII art from Alfred E. Heggestad (libre)  (BSD license)
  */
 
 static const uint8_t StunCookie[]   = STUN_MAGIC_COOKIE_ARRAY;
@@ -474,7 +474,7 @@ stunEncodeIP6AddrAtrXOR(StunAddress6* pAddr,
   write_16(pBuf, attrtype);   /* Attr type */
   write_16(pBuf, 20);          /* Lenght */
   write_16(pBuf, STUN_ADDR_IPv6Family);        /* 8 bit non used, 8 bit for
-                                               * Family (always IPv4) or? */
+                                                * Family (always IPv4) or? */
   write_16_xor(pBuf, pAddr->port, xorId);
   write_8_xor(pBuf, pAddr->addr[0],  xorId);
   write_8_xor(pBuf, pAddr->addr[1],  xorId + 1);
@@ -1397,7 +1397,7 @@ stunDecodeErrorAtrAlligned(StunAtrError*   pError,
 {
   uint32_t padLen = calcPadLen(atrLen, allignment);
 
-  if (*nBufLen < atrLen)
+  if ( (*nBufLen < atrLen) || (atrLen < 4) )
   {
     printError(stderr,
                "stunDecodeErrorAtr: failed nBufLen %d atrLen %d\n",
@@ -1745,7 +1745,7 @@ stun_printData(FILE*           stream,
 }
 
 void
-stun_printTransId(FILE*     stream,
+stun_printTransId(FILE*            stream,
                   const StunMsgId* pId)
 {
   int i;
@@ -1772,8 +1772,8 @@ stun_printMessage(FILE*              stream,
     printError(stream, "  msgHdr.length \t= %d\n", pMsg->msgHdr.msgLength);
     printError(stream, "  msgHdr.id[] \t = ");
 
-    stun_printTransId(stream, &pMsg->msgHdr.id);
-    printError(stream, "\n");
+  stun_printTransId(stream, &pMsg->msgHdr.id);
+  printError(stream, "\n");
 
 
   /* First write all attributes to calculate total length.... */
@@ -2005,7 +2005,7 @@ stunlib_StunMsgLen(const uint8_t* payload)
 
 /* Channel data has first 2 bits = 01 */
 bool
-stunlib_isTurnChannelData(uint8_t* payload)
+stunlib_isTurnChannelData(const uint8_t* payload)
 {
   return ( (*payload & STUN_PACKET_MASK) == TURN_CHANNEL_PACKET );
 }
@@ -2052,9 +2052,10 @@ stunlib_DecodeMessage(const uint8_t*  buf,
   int            restlen = bufLen;
   StunAtrHdr     sAtr;
 
-  if (!buf || !message)
+  if ( !buf || !message || (bufLen < STUN_MIN_PACKET_SIZE) ||
+       (bufLen > STUN_MAX_PACKET_SIZE) )
   {
-    if (stream != NULL)
+    if (stream)
     {
       printError(stderr, "No buffer or no message recieved\n");
     }
@@ -2067,7 +2068,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
   {
     unknowns->numAttributes = 0;
   }
-  if (stream != NULL)
+  if (stream)
   {
     printError(stream,"STUN_parse, buffer to parse: \n");
     stunlib_printBuffer(stream, (uint8_t*)buf, bufLen, "STUN");
@@ -2083,7 +2084,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
                pCurrPtr);
     return false;
   }
-  if (stream != NULL)
+  if (stream)
   {
     printError(stream, "After parsed header:\n");
     stun_printMessage(stream, message);
@@ -2099,7 +2100,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
   restlen = message->msgHdr.msgLength;
   while (restlen > 0)
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream,
                  "Parsing attribute head with restlen=%d at %p\n",
@@ -2113,7 +2114,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
                  restlen);
       return false;
     }
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream,
                  "Attribute Header parsed: type == %d, length == %d\n",
@@ -2124,8 +2125,8 @@ stunlib_DecodeMessage(const uint8_t*  buf,
     {
     case STUN_ATTR_FingerPrint:
       /* Length of message + header(20) - rest of message */
-      if ( !stunlib_checkFingerPrint(buf, message->msgHdr.msgLength + 20 -
-                                     restlen) )
+      if (!stunlib_checkFingerPrint(buf, message->msgHdr.msgLength + 20 -
+                                    restlen) && stream)
       {
         printError(stream, "stunlib_DecodeMessage: --Fingerprint CRC error");
       }
@@ -2507,7 +2508,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
   }
   if (restlen != 0)
   {
-    if (stream != NULL)
+    if (stream)
     {
       fprintf(stream, "<stunmsg> Message length or attribute length error.\n");
     }
@@ -2516,7 +2517,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
 
 
 
-  if (stream != NULL)
+  if (stream)
   {
     printError(stream, "STUN_parse, message parsed: \n");
     stun_printMessage(stream, message);
@@ -2732,7 +2733,7 @@ stunlib_encodeMessage(StunMessage*   message,
 
   if ( !message || !buf || (bufLen < STUN_HEADER_SIZE) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream,
                  "invalid arguments (%p, %p, %d)\n",
@@ -2752,7 +2753,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                     &pCurrPtr,
                                                     &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Software (Name)\n");
     }
@@ -2764,7 +2765,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                    &pCurrPtr,
                                                    &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Priority attribute\n");
     }
@@ -2776,7 +2777,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                            &pCurrPtr,
                                                            &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid ICEControlled\n");
     }
@@ -2788,7 +2789,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                     &pCurrPtr,
                                                     &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Username\n");
     }
@@ -2800,7 +2801,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                  &pCurrPtr,
                                                  &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Nonce attribute\n");
     }
@@ -2813,7 +2814,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                  &pCurrPtr,
                                                  &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Realm attribute\n");
     }
@@ -2825,7 +2826,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                    &pCurrPtr,
                                                    &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Lifetime attribute\n");
     }
@@ -2837,7 +2838,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                      &pCurrPtr,
                                      &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid RequestedTransport attribute\n");
     }
@@ -2851,7 +2852,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                       &
                                       restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid RequestedAddressFamily attribute\n");
     }
@@ -2865,7 +2866,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                       &
                                       restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid RequestedAddressFamily attribute\n");
     }
@@ -2878,7 +2879,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                  &pCurrPtr,
                                  &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid IceControlling\n");
     }
@@ -2891,7 +2892,7 @@ stunlib_encodeMessage(StunMessage*   message,
                             &pCurrPtr,
                             &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "mappedAddress failed \n");
     }
@@ -2902,7 +2903,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                     &pCurrPtr,
                                                     &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Error attribute\n");
     }
@@ -2913,7 +2914,7 @@ stunlib_encodeMessage(StunMessage*   message,
                              &pCurrPtr,
                              &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid unknown attribute\n");
     }
@@ -2928,7 +2929,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                &message->msgHdr.
                                id) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid xorMappedAddress\n");
     }
@@ -2940,7 +2941,7 @@ stunlib_encodeMessage(StunMessage*   message,
                              &pCurrPtr,
                              &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid ChannelNumber attribute\n");
     }
@@ -2954,7 +2955,7 @@ stunlib_encodeMessage(StunMessage*   message,
                             &pCurrPtr,
                             &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Alternate Server\n");
     }
@@ -2984,7 +2985,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                &message->
                                msgHdr.id) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "xorRelayAddressIPv4 failed \n");
     }
@@ -2999,7 +3000,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                &message->
                                msgHdr.id) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "xorRelayAddressIPv6 failed \n");
     }
@@ -3010,7 +3011,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                       &pCurrPtr,
                                                       &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid UseCandidate\n");
     }
@@ -3021,7 +3022,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                       &pCurrPtr,
                                                       &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid DontFragment\n");
     }
@@ -3032,7 +3033,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                    &pCurrPtr,
                                                    &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid EvenPort attribute\n");
     }
@@ -3045,7 +3046,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                  &pCurrPtr,
                                  &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Reservation Token attribute\n");
     }
@@ -3057,7 +3058,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                        &pCurrPtr,
                                                        &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid StreamType attribute\n");
     }
@@ -3070,7 +3071,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                  &pCurrPtr,
                                  &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid BandwidthUsage attribute\n");
     }
@@ -3082,7 +3083,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                          &pCurrPtr,
                                          &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid TTL attribute\n");
     }
@@ -3094,7 +3095,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                                      &pCurrPtr,
                                                      &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid TTLString\n");
     }
@@ -3106,7 +3107,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                 &pCurrPtr,
                                 &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Network Status attribute\n");
     }
@@ -3118,7 +3119,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                        &pCurrPtr,
                                        &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Cisco Network Feedback attribute\n");
     }
@@ -3131,7 +3132,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                               &pCurrPtr,
                                               &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Data attribute\n");
     }
@@ -3140,7 +3141,7 @@ stunlib_encodeMessage(StunMessage*   message,
 
 
 
-  if (md5key != NULL)
+  if (md5key)
   {
     message->hasMessageIntegrity = true;
     memset( &message->messageIntegrity,0,sizeof(message->messageIntegrity) );
@@ -3165,7 +3166,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                 &pCurrPtr,
                                 &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Network Status attribute\n");
     }
@@ -3177,7 +3178,7 @@ stunlib_encodeMessage(StunMessage*   message,
                                        &pCurrPtr,
                                        &restlen) )
   {
-    if (stream != NULL)
+    if (stream)
     {
         printError(stream, "Invalid Cisco Network Feedback attribute\n");
     }
@@ -3191,7 +3192,7 @@ stunlib_encodeMessage(StunMessage*   message,
   pCurrPtr                  = (uint8_t*)buf;
   restlen                   = bufLen;
   stunEncodeHeader(&message->msgHdr, &pCurrPtr, &restlen);
-  if (md5key != NULL)
+  if (md5key)
   {
     uint32_t length;
     (void)length;
@@ -3248,7 +3249,7 @@ stunlib_encodeMessage(StunMessage*   message,
     }
 
   }
-  if (stream != NULL)
+  if (stream)
   {
       printError(stream, "STUN_encode, messages to encode: \n");
     stun_printMessage(stream, message);

@@ -150,10 +150,10 @@ TransIdIsEqual(const StunMsgId* a,
 
 static void
 StoreStunBindReq(STUN_TRANSACTION_DATA* trans,
-                 StunBindReqStuct*      pMsgIn)
+                 StunBindReqStruct*      pMsgIn)
 {
   /* copy whole msg */
-  memcpy( &trans->stunBindReq, pMsgIn, sizeof(StunBindReqStuct) );
+  memcpy( &trans->stunBindReq, pMsgIn, sizeof(StunBindReqStruct) );
 }
 
 
@@ -202,13 +202,12 @@ BuildStunBindReq(STUN_TRANSACTION_DATA* trans,
   {
     char ttlString[200];
     char iTTL[5] = "0000\0";
-    int  i;
     stunReqMsg->hasTTL  = true;
     stunReqMsg->ttl.ttl = trans->stunBindReq.ttl;
 
     sprintf(iTTL, "%.4i", trans->stunBindReq.ttl);
     ttlString[0] = '\0';
-    for (i = 0; i < trans->stunBindReq.ttl; i++)
+    for (int i = 0; i < trans->stunBindReq.ttl; i++)
     {
       strncat(ttlString,iTTL, 4);
     }
@@ -252,7 +251,6 @@ BuildStunBindReq(STUN_TRANSACTION_DATA* trans,
 bool
 StunClient_Alloc(STUN_CLIENT_DATA** clientDataPtr)
 {
-  int               i;
   STUN_CLIENT_DATA* clientData;
 
   if (!clientDataPtr)
@@ -273,7 +271,7 @@ StunClient_Alloc(STUN_CLIENT_DATA** clientDataPtr)
 
   StunClient_clearStats(clientData);
 
-  for (i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     trans->inst   = i;
@@ -313,14 +311,13 @@ void
 StunClient_HandleTick(STUN_CLIENT_DATA* clientData,
                       uint32_t          TimerResMsec)
 {
-  int i;
   if (clientData == NULL)
   {
     return;
   }
 
   /* call fsm for each timer that has expired */
-  for (i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse && TimerHasExpired(trans, TimerResMsec) )
@@ -336,6 +333,7 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 void*                  userCtx,
                                 const struct sockaddr* serverAddr,
                                 const struct sockaddr* baseAddr,
+                                int                    proto,
                                 bool                   useRelay,
                                 const char*            ufrag,
                                 const char*            password,
@@ -347,24 +345,9 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 uint32_t               sockhandle,
                                 STUN_SENDFUNC          sendFunc,
                                 STUNCB                 stunCbFunc,
-                                DiscussData*           discussData)          /*NULL
-                                                                              *
-                                                                              *
-                                                                              *
-                                                                              *
-                                                                              *
-                                                                              *
-                                                                              *if
-                                                                              *
-                                                                              *
-                                                                              *
-                                                                              *
-                                                                              *
-                                                                              *
-                                                                              *none*/
-
+                                DiscussData*           discussData)
 {
-  StunBindReqStuct m;
+  StunBindReqStruct m;
 
   if (clientData == NULL)
   {
@@ -381,6 +364,7 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
   sockaddr_copy( (struct sockaddr*)&m.baseAddr,   baseAddr );
   strncpy(m.ufrag,    ufrag,    sizeof(m.ufrag) - 1);
   strncpy(m.password, password, sizeof(m.password) - 1);
+  m.proto          = proto;
   m.useRelay       = useRelay;
   m.peerPriority   = peerPriority;
   m.useCandidate   = useCandidate;
@@ -418,7 +402,7 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                                                                         * none*/
 
 {
-  StunBindReqStuct      m;
+  StunBindReqStruct      m;
   STUN_TRANSACTION_DATA trans;
   StunMessage           stunMsg;
   uint8_t               stunBuff[STUN_MAX_PACKET_SIZE];
@@ -447,7 +431,7 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
   m.addSoftware   = false;
   /* callback and data (owned by caller) */
   m.stunCbFunc = stunCbFunc;
-  m.stuntrace = true;
+  m.stuntrace  = true;
 
   StoreStunBindReq(&trans, &m);
   BuildStunBindReq(&trans, &stunMsg);
@@ -469,13 +453,12 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
                          const StunMessage*     msg,
                          const struct sockaddr* srcAddr)
 {
-  int i;
   if (clientData == NULL)
   {
     return;
   }
 
-  for (i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
@@ -502,7 +485,6 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
                       const struct sockaddr* srcAddr,
                       uint32_t               ICMPtype)
 {
-  int i;
   if (clientData == NULL)
   {
     return;
@@ -510,7 +492,7 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
   /* Todo: Test if this is fr me.. */
   (void)srcAddr;
 
-  for (i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
@@ -546,7 +528,6 @@ int
 StunClient_cancelBindingTransaction(STUN_CLIENT_DATA* clientData,
                                     StunMsgId         transactionId)
 {
-  int i;
   if (clientData == NULL)
   {
     StunPrint(clientData->logUserData,
@@ -556,7 +537,7 @@ StunClient_cancelBindingTransaction(STUN_CLIENT_DATA* clientData,
     return STUNCLIENT_CTX_UNKNOWN;
   }
 
-  for (i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
@@ -576,6 +557,7 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
                               StunMsgId              transactionId,
                               const struct sockaddr* mappedSockAddr,
                               uint16_t               response,
+                              uint32_t               responseCode,
                               DiscussData*           discussData)
 {
   StunIPAddress mappedAddr;
@@ -642,6 +624,24 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
     stunMsg->networkStatusResp.downMaxBandwidth =
       discussData->networkStatusResp_downMaxBandwidth;
   }
+  if (responseCode != 200)
+  {
+    stunMsg->hasErrorCode         = true;
+    stunMsg->errorCode.errorClass = responseCode / 100;
+    stunMsg->errorCode.number     = (uint8_t) (responseCode % 100);
+    if (responseCode == 487)
+    {
+      strncpy( stunMsg->errorCode.reason, "Role Conflict",
+               sizeof (stunMsg->errorCode.reason) );
+      stunMsg->errorCode.sizeReason = strlen(stunMsg->errorCode.reason);
+    }
+    else if (responseCode == 400)
+    {
+      strncpy( stunMsg->errorCode.reason, "Bad Request",
+               sizeof (stunMsg->errorCode.reason) );
+      stunMsg->errorCode.sizeReason = strlen(stunMsg->errorCode.reason);
+    }
+  }
 
   return true;
 }
@@ -655,6 +655,7 @@ SendConnectivityBindResponse(STUN_CLIENT_DATA*      clientData,
                              const struct sockaddr* dstAddr,
                              void*                  userData,
                              STUN_SENDFUNC          sendFunc,
+                             int                    proto,
                              bool                   useRelay)
 {
   uint8_t stunBuff[STUN_MAX_PACKET_SIZE];
@@ -680,7 +681,15 @@ SendConnectivityBindResponse(STUN_CLIENT_DATA*      clientData,
   }
 
   /* send */
-  sendFunc(globalSocketId, stunBuff, stunLen, dstAddr, useRelay, 0);
+  /* sendFunc(globalSocketId, stunBuff, stunLen, dstAddr, useRelay, 0); */
+  sendFunc(clientData->userCtx,
+           globalSocketId,
+           stunBuff,
+           stunLen,
+           dstAddr,
+           proto,
+           useRelay,
+           0);
   clientData->stats.BindRespSent++;
   return true;
 }
@@ -696,6 +705,7 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                        const struct sockaddr* dstAddr,
                                        void*                  userData,
                                        STUN_SENDFUNC          sendFunc,
+                                       int                    proto,
                                        bool                   useRelay,
                                        uint32_t               responseCode,
                                        DiscussData*           discussData)
@@ -709,6 +719,7 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                      (responseCode ==
                                       200) ? STUN_MSG_BindResponseMsg :
                                      STUN_MSG_BindErrorResponseMsg,
+                                     responseCode,
                                      discussData) )
   {
     /* encode and send */
@@ -719,6 +730,7 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                       dstAddr,
                                       userData,
                                       sendFunc,
+                                      proto,
                                       useRelay) )
     {
       return true;
@@ -1087,10 +1099,12 @@ SendStunReq(STUN_TRANSACTION_DATA* trans,
   gettimeofday(&trans->start[trans->retransmits], NULL);
   if (trans->stunBindReq.sendFunc != NULL)
   {
-    trans->stunBindReq.sendFunc(trans->stunBindReq.sockhandle,
+    trans->stunBindReq.sendFunc(trans->client->userCtx,
+                                trans->stunBindReq.sockhandle,
                                 trans->stunReqMsgBuf,
                                 trans->stunReqMsgBufLen,
                                 (struct sockaddr*)&trans->stunBindReq.serverAddr,
+                                trans->stunBindReq.proto,
                                 trans->stunBindReq.useRelay,
                                 trans->stunBindReq.ttl);
   }
@@ -1129,10 +1143,12 @@ RetransmitLastReq(STUN_TRANSACTION_DATA*   trans,
                   struct sockaddr_storage* destAddr)
 {
   gettimeofday(&trans->start[trans->retransmits + 1], NULL);
-  trans->stunBindReq.sendFunc(trans->stunBindReq.sockhandle,
+  trans->stunBindReq.sendFunc(trans->client->userCtx,
+                              trans->stunBindReq.sockhandle,
                               trans->stunReqMsgBuf,
                               trans->stunReqMsgBufLen,
                               (struct sockaddr*)destAddr,
+                                trans->stunBindReq.proto,
                               trans->stunBindReq.useRelay,
                               trans->stunBindReq.ttl);
 }
@@ -1142,12 +1158,15 @@ static void
 StartFirstRetransmitTimer(STUN_TRANSACTION_DATA* trans)
 {
   trans->retransmits = 0;
-  if(trans->stunBindReq.stuntrace){
+  if (trans->stunBindReq.stuntrace)
+  {
     StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
                stuntraceTimeoutList[trans->retransmits]);
-  }else{
-  StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
-             stunTimeoutList[trans->retransmits]);
+  }
+  else
+  {
+    StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
+               stunTimeoutList[trans->retransmits]);
   }
 }
 
@@ -1155,13 +1174,16 @@ StartFirstRetransmitTimer(STUN_TRANSACTION_DATA* trans)
 static void
 StartNextRetransmitTimer(STUN_TRANSACTION_DATA* trans)
 {
-  if(trans->stunBindReq.stuntrace){
+  if (trans->stunBindReq.stuntrace)
+  {
     StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
                stuntraceTimeoutList[trans->retransmits]);
-  }else{
-  StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
-             stunTimeoutList[trans->retransmits]);
-           }
+  }
+  else
+  {
+    StartTimer(trans, STUN_SIGNAL_TimerRetransmit,
+               stunTimeoutList[trans->retransmits]);
+  }
 }
 
 
@@ -1193,9 +1215,12 @@ CommonRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans,
 
   uint32_t max;
 
-  if(trans->stunBindReq.stuntrace){
+  if (trans->stunBindReq.stuntrace)
+  {
     max = STUNTRACE_MAX_RETRANSMITS;
-  }else{
+  }
+  else
+  {
     max = STUNCLIENT_MAX_RETRANSMITS;
   }
 
@@ -1402,7 +1427,7 @@ StunState_Idle(STUN_TRANSACTION_DATA* trans,
   {
   case STUN_SIGNAL_BindReq:
   {
-    StunBindReqStuct* pMsgIn = (StunBindReqStuct*)payload;
+    StunBindReqStruct* pMsgIn = (StunBindReqStruct*)payload;
     StunMessage       stunReqMsg;    /* decoded */
     /* clear instance data */
     InitInstData(trans);
@@ -1564,6 +1589,9 @@ StunState_Cancelled(STUN_TRANSACTION_DATA* trans,
     SetNextState(trans, STUN_STATE_Idle);
     break;
   }
+  case STUN_SIGNAL_Cancel:
+    /* Ignore */
+    break;
 
   default:
     StunAllState(trans, sig);
@@ -1576,7 +1604,6 @@ StunState_Cancelled(STUN_TRANSACTION_DATA* trans,
 void
 StunClient_clearStats(STUN_CLIENT_DATA* clientData)
 {
-  int i;
   if (!clientData)
   {
     return;
@@ -1584,7 +1611,7 @@ StunClient_clearStats(STUN_CLIENT_DATA* clientData)
 
     memset(&clientData->stats, 0, sizeof clientData->stats);
 
-  for (i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
   {
     memset( &clientData->data[i].stats, 0, sizeof (struct StunClientStats) );
   }
@@ -1596,7 +1623,6 @@ StunClient_dumpStats (STUN_CLIENT_DATA*  clientData,
                       STUN_INFO_FUNC_PTR logPtr,
                       void*              userData)
 {
-  int                     i;
   struct StunClientStats  stats;
   struct StunClientStats* ptr     = &clientData->stats;
   int                     usedCnt = 0;
@@ -1618,7 +1644,7 @@ StunClient_dumpStats (STUN_CLIENT_DATA*  clientData,
   stats.Retransmits                  += ptr->Retransmits;
   stats.Failures                     += ptr->Failures;
 
-  for (i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
   {
     ptr = &clientData->data[i].stats;
 

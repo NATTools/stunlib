@@ -65,6 +65,7 @@ typedef struct {
   bool                    useCandidate;
   bool                    iceControlling;
   uint64_t                tieBreaker;
+  uint32_t                proto;
   uint8_t                 ttl;
   StunMsgId               transactionId;
   uint32_t                sockhandle;
@@ -73,7 +74,7 @@ typedef struct {
   DiscussData*            discussData;    /*NULL allowed if none present */
   bool                    addSoftware;
   bool                    stuntrace;
-} StunBindReqStuct;
+} StunBindReqStruct;
 
 struct StunClientStats
 {
@@ -99,7 +100,7 @@ typedef struct
   STUN_STATE       state;
   bool             inUse;
   uint32_t         inst;
-  StunBindReqStuct stunBindReq;
+  StunBindReqStruct stunBindReq;
 
   uint8_t stunReqMsgBuf[STUN_MAX_PACKET_SIZE];         /* encoded STUN request
                                                         *   */
@@ -136,6 +137,7 @@ typedef struct
 
 struct STUN_CLIENT_DATA
 {
+  void*            userCtx;
   STUN_TRANSACTION_DATA data [MAX_STUN_TRANSACTIONS];
 
 

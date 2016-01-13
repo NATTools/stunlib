@@ -172,8 +172,8 @@ extern "C" {
 
 #define STUN_MIN_PACKET_SIZE             20
 #define STUN_HEADER_SIZE                 20
-#define STUN_MAX_PACKET_SIZE            1056
-#define STUN_MAX_ATTR_SIZE              1000
+#define STUN_MAX_PACKET_SIZE            1556
+#define STUN_MAX_ATTR_SIZE              1500
 #define STUN_MAX_STRING                 256
 #define STUN_MAX_UNKNOWN_ATTRIBUTES       8
 #define STUN_MAGIC_COOKIE_ARRAY         {0x21, 0x12, 0xA4, 0x42}
@@ -186,6 +186,8 @@ extern "C" {
 #define STUNCLIENT_MAX_RETRANSMITS          9
 #define STUNCLIENT_RETRANSMIT_TIMEOUT_LIST      100, 200, 300, 400, 500, 500, \
   500, 500, 500                                                                              /*
+                                                                                              *
+                                                                                              *
                                                                                               *
                                                                                               *msec
                                                                                               **/
@@ -552,32 +554,21 @@ typedef struct
 } StunMessage;
 
 /* Defines how a user of stun sends data on e.g. socket */
-typedef void (* STUN_SENDFUNC)(int                    sockHandle,   /* context -
-                                                                     * e.g.
-                                                                     * socket
-                                                                     * handle */
-                               const uint8_t*         buffer,       /* ptr to
-                                                                     * buffer to
-                                                                     * send */
-                               int                    bufLen,       /* length of
-                                                                     * send
-                                                                     * buffer */
-                               const struct sockaddr* dstAddr,      /* Optional,
-                                                                     * if
-                                                                     * connected
-                                                                     * to socket
-                                                                     **/
-                               bool                   useRelay,     /* User
-                                                                     * context
-                                                                     * data.
-                                                                     * Optional
-                                                                     **/
-                               const uint8_t          ttl);         /* TTL to
-                                                                     * set on IP
-                                                                     * packet, 0
-                                                                     * is
-                                                                     *ignored
-                                                                     **/
+/* context - e.g. socket handle */
+/* ptr to buffer to send */
+/* length of send buffer */
+/* Optional if connected to socket */
+/* User context data. Optional */
+/* TTL to set on IP packet, 0 is ignored */
+
+typedef void (* STUN_SENDFUNC)(void*                  ctx,
+                               int                    sockHandle,
+                               const uint8_t*         buffer,
+                               int                    bufLen,
+                               const struct sockaddr* dstAddr,
+                               int                    proto,
+                               bool                   useRelay,
+                               const uint8_t          ttl);
 
 /* Defines how errors are reported */
 typedef void (* STUN_ERR_FUNC)(const char* fmt,
@@ -610,7 +601,7 @@ stunlib_isStunMsg(const uint8_t* payload,
  * \return               TRUE if message is TURN Channel Data
  */
 bool
-stunlib_isTurnChannelData(uint8_t* payload);
+stunlib_isTurnChannelData(const uint8_t* payload);
 
 
 /*!

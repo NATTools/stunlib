@@ -75,15 +75,19 @@ PrintStunInfo(void*              userData,
 }
 
 static void
-SendRawStun(int                    sockfd,
+SendRawStun(void*                  ctx,
+            int                    sockfd,
             const uint8_t*         buf,
             int                    len,
             const struct sockaddr* addr,
+            int                    proto,
             bool                   useRelay,
             uint8_t                ttl)
 {
+  (void) ctx;
   (void) sockfd;
   (void) len;
+  (void) proto;
   (void) useRelay;
   (void) ttl;
   char addr_str[SOCKADDR_MAX_STRLEN];
@@ -113,6 +117,7 @@ StartBindTransaction(int n)
                                          NULL,
                                          (struct sockaddr*)&stunServerAddr,
                                          NULL,
+                                         0,
                                          false,
                                          "pem",
                                          "pem",
@@ -155,6 +160,7 @@ StartDiscussBindTransaction(int n)
                                          NULL,
                                          (struct sockaddr*)&stunServerAddr,
                                          NULL,
+                                         0,
                                          false,
                                          "pem",
                                          "pem",

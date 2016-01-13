@@ -124,7 +124,6 @@ StunClient_free(STUN_CLIENT_DATA* clientData);
  *provide a function such as below::
  *    userData       - void pointer to be returned with logger callback
  */
-
 void
 StunClient_RegisterLogger(STUN_CLIENT_DATA*  clientData,
                           STUN_INFO_FUNC_PTR logPtr,
@@ -138,6 +137,7 @@ StunClient_RegisterLogger(STUN_CLIENT_DATA*  clientData,
  * Optional, can be NULL. STUN does not write to this data.
  *     serverAddr       -  Address of TURN server in format  "a.b.c.d:port"
  *     baseAddr         -  Address of BASE in format  "a.b.c.d:port"
+ *     proto            -  Optional context passed to sendFunc. eg. IPPROTO_UDP/TCP.
  *     useRelay         -  True to send via TURN server
  *     uFrag            -  Combination of local and remote ufrag exchanged in
  *INVITE(LFRAG) / OK(RFRAG) in format <LFRAG>:<RFRAG>
@@ -166,6 +166,7 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 void*                  userCtx,
                                 const struct sockaddr* serverAddr,
                                 const struct sockaddr* baseAddr,
+                                int                    proto,
                                 bool                   useRelay,
                                 const char*            ufrag,
                                 const char*            password,
@@ -250,6 +251,7 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                        const struct sockaddr* dstAddr,
                                        void*                  userData,
                                        STUN_SENDFUNC          sendFunc,
+                                       int                    proto,
                                        bool                   useRelay,
                                        uint32_t               responseCode,
                                        DiscussData*           discussData);
