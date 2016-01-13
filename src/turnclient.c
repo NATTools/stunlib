@@ -72,7 +72,7 @@
 
 
 #include <stdio.h>
-#include <stdliB.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -2832,13 +2832,13 @@ TurnClient_HasBoundChannel(TURN_INSTANCE_DATA* inst)
 
 /* send media (via turnserver) to peer */
 bool
-TurnClient_SendPacket(TURN_INSTANCE_DATA* pInst,
-                      uint8_t*            buf,
-                      size_t              bufSize,
-                      uint32_t            dataLen,
-                      uint32_t            offset,
+TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
+                      uint8_t*               buf,
+                      size_t                 bufSize,
+                      uint32_t               dataLen,
+                      uint32_t               offset,
                       const struct sockaddr* peerAddr,
-                      bool                needChannelDataPadding)
+                      bool                   needChannelDataPadding)
 {
   uint8_t* payload            = buf + offset;
   uint32_t turnSendIndHdrSize = TURN_SEND_IND_HDR_SIZE;
