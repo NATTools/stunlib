@@ -432,10 +432,7 @@ Sim_TimerRefreshPermission(int ctx)
 
 CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 {
-  int ctx;
-
-  ctx = StartAllocateTransaction(0);
-  printf("WaitAllocRespNotAut_Timeout: %p\n", pInst);
+  StartAllocateTransaction(0);
 
   /* 1 Tick */
   TurnClient_HandleTick(pInst);
