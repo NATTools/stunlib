@@ -16,6 +16,7 @@ sa_test ( testvector )
 sa_test ( realworldpackets )
 sa_test ( stunclient )
 sa_test ( turnmessage )
+sa_test ( stunserver )
 
 
 include ( CTest )
