@@ -202,7 +202,6 @@ SimAllocResp(int  ctx,
 
 }
 
-#if 0
 static void
 SimSSODAAllocResp(int  ctx,
                   bool relay,
@@ -255,7 +254,6 @@ SimSSODAAllocResp(int  ctx,
   TurnClient_HandleIncResp(pInst, &m, NULL);
 
 }
-#endif
 
 static void
 Sim_ChanBindOrPermissionResp(int      ctx,
@@ -432,64 +430,6 @@ Sim_TimerRefreshPermission(int ctx)
   TurnClientSimulateSig(pInst, TURN_SIGNAL_TimerRefreshPermission);
 }
 
-#if 0
-static void
-setup (void)
-{
-  runningAsIPv6 = false;
-  sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,
-                           "193.200.93.152:3478" );
-  pInst = NULL;
-}
-
-static void
-teardown (void)
-{
-  turnResult = TurnResult_Empty;
-
-  TurnClient_free(pInst);
-  pInst = NULL;
-}
-
-
-static void
-setupIPv6 (void)
-{
-  runningAsIPv6 = true;
-  sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,
-                           "[2001:470:dc88:2:226:18ff:fe92:6d53]:3478" );
-  pInst = NULL;
-}
-
-static void
-teardownIPv6 (void)
-{
-  turnResult = TurnResult_Empty;
-  TurnClient_free(pInst);
-  pInst = NULL;
-}
-#endif
-
-
-
-#if 0
-CTEST(turnclient, turnclient_init)
-{
-
-  int ret;
-  ret = TurnClient_Init(TEST_THREAD_CTX,
-                        50,
-                        50,
-                        PrintTurnInfo,
-                        false,
-                        "UnitTestSofware");
-  ASSERT_FALSE(ret);
-
-}
-
-#endif
-
-
 CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 {
   StartAllocateTransaction(0);
@@ -534,7 +474,19 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
 
 }
 
+CTEST(turnclient, WaitAllocRespNotAutSSODA_AllocRspOk)
+{
+  int ctx;
+  ctx = StartAllocateTransaction(5);
+  TurnClient_HandleTick(pInst);
+  SimSSODAAllocResp(ctx, true, true, true);
+  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
 
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+
+}
 
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
 {
@@ -542,7 +494,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
   ctx = StartAllocateTransaction(11);
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 3, 0, false, false, true);    /* 300, alt
-                                                                   * server */
+                                                                  * server */
   ASSERT_FALSE(turnResult == TurnResult_Empty);
 
   TurnClient_HandleTick(pInst);
@@ -628,8 +580,8 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_ErrNot401)
   ctx = StartAllocateTransaction(15);
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 4, false, false, false);   /* 404, no
-                                                                   * realm, no
-                                                                   * nonce */
+                                                                  * realm, no
+                                                                  * nonce */
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
   TurnClient_Deallocate(pInst);
@@ -674,7 +626,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf3)
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 3, 0, false, false, false);    /* 300,
                                                                     * missing
-                                                                    *alt
+                                                                    * alt
                                                                     * server */
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
@@ -1058,53 +1010,6 @@ CTEST(turnclient, Allocated_CreatePermissionErrorAndChannelBind)
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
-
-
-
-#if 0
-CTEST(turnclient, SendIndication)
-{
-  struct sockaddr_storage addr;
-  unsigned char           stunBuf[200];
-  char                    message[] = "Some useful data\0";
-  int                     msg_len;
-  StunMessage             msg;
-
-
-  sockaddr_initFromString( (struct sockaddr*)&addr,
-                           "1.2.3.4:2345" );
-
-  msg_len = TurnClient_createSendIndication(stunBuf,
-                                            message,
-                                            sizeof(stunBuf),
-                                            strlen(message),
-                                            (struct sockaddr*)&addr,
-                                            false,
-                                            0,
-                                            0);
-  ASSERT_FALSE( msg_len == 52);
-
-
-  ASSERT_FALSE( stunlib_DecodeMessage(stunBuf,
-                                      msg_len,
-                                      &msg,
-                                      NULL,
-                                      NULL) );
-
-
-  ASSERT_FALSE( msg.msgHdr.msgType == STUN_MSG_SendIndicationMsg);
-
-  ASSERT_FALSE( msg.hasData);
-
-
-  ASSERT_FALSE( 0 == strncmp( &stunBuf[msg.data.offset], message, strlen(
-                                message) ) );
-
-
-
-}
-
-#endif
 
 
 CTEST(turnclient, GetMessageName)
