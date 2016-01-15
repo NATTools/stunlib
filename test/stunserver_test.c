@@ -112,22 +112,42 @@ CTEST(stunserver, HandleReq_InValid)
 
 CTEST(stunserver, SendResp_Valid)
 {
-  bool useRelay = false;
+  bool                    useRelay = false;
+  struct sockaddr_storage mappedAddr,servAddr;
+  sockaddr_initFromString( (struct sockaddr*)&servAddr,
+                           "193.200.93.152:3478" );
 
+  StunClient_Alloc(&stunInstance);
   ASSERT_FALSE( StunServer_SendConnectivityBindingResp(stunInstance,
-                                                       0,  /* sockhandle */
-                                                       LastTransId,
-                                                       "pem",
-                                                       (struct sockaddr*)&
-                                                       stunServerAddr,
-                                                       (struct sockaddr*)&
-                                                       stunServerAddr,
-                                                       NULL,
-                                                       SendRawStun,
-                                                       0,
-                                                       useRelay,
-                                                       0,  /* responseCode */
-                                                       NULL) );
+                                                      0,   /* sockhandle */
+                                                      LastTransId,
+                                                      "pem",
+                                                      (struct sockaddr*)&
+                                                      mappedAddr,
+                                                      (struct sockaddr*)&
+                                                      servAddr,
+                                                      NULL,
+                                                      SendRawStun,
+                                                      0,
+                                                      useRelay,
+                                                      0,   /* responseCode */
+                                                      NULL) );
+  sockaddr_initFromString( (struct sockaddr*)&mappedAddr,
+                           "193.200.93.152:3478" );
+  ASSERT_TRUE( StunServer_SendConnectivityBindingResp(stunInstance,
+                                                      0,
+                                                      LastTransId,
+                                                      "pem",
+                                                      (struct sockaddr*)&
+                                                      mappedAddr,
+                                                      (struct sockaddr*)&
+                                                      servAddr,
+                                                      NULL,
+                                                      SendRawStun,
+                                                      0,
+                                                      useRelay,
+                                                      0,
+                                                      NULL) );
 
 }
 
