@@ -119,19 +119,19 @@ CTEST(stunserver, SendResp_Valid)
 
   StunClient_Alloc(&stunInstance);
   ASSERT_FALSE( StunServer_SendConnectivityBindingResp(stunInstance,
-                                                      0,   /* sockhandle */
-                                                      LastTransId,
-                                                      "pem",
-                                                      (struct sockaddr*)&
-                                                      mappedAddr,
-                                                      (struct sockaddr*)&
-                                                      servAddr,
-                                                      NULL,
-                                                      SendRawStun,
-                                                      0,
-                                                      useRelay,
-                                                      0,   /* responseCode */
-                                                      NULL) );
+                                                       0,  /* sockhandle */
+                                                       LastTransId,
+                                                       "pem",
+                                                       (struct sockaddr*)&
+                                                       mappedAddr,
+                                                       (struct sockaddr*)&
+                                                       servAddr,
+                                                       NULL,
+                                                       SendRawStun,
+                                                       0,
+                                                       useRelay,
+                                                       0,  /* responseCode */
+                                                       NULL) );
   sockaddr_initFromString( (struct sockaddr*)&mappedAddr,
                            "193.200.93.152:3478" );
   ASSERT_TRUE( StunServer_SendConnectivityBindingResp(stunInstance,
@@ -164,8 +164,11 @@ CTEST(stunserver, SendDiscussResp_Valid)
   discussData.networkStatus_upMaxBandwidth   = 0;
   discussData.networkStatus_downMaxBandwidth = 0;
 
+  sockaddr_initFromString( (struct sockaddr*)&stunServerAddr,
+                           "193.200.93.152:3478" );
 
-  ASSERT_FALSE( StunServer_SendConnectivityBindingResp(stunInstance,
+  StunClient_Alloc(&stunInstance);
+  ASSERT_TRUE( StunServer_SendConnectivityBindingResp(stunInstance,
                                                        0,  /* sockhandle */
                                                        LastTransId,
                                                        "pem",
