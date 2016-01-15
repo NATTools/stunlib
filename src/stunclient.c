@@ -255,7 +255,7 @@ StunClient_Alloc(STUN_CLIENT_DATA** clientDataPtr)
 
   if (!clientDataPtr)
   {
-    return false;
+      return false;
   }
 
   clientData = malloc(sizeof *clientData);
@@ -328,7 +328,7 @@ StunClient_HandleTick(STUN_CLIENT_DATA* clientData,
 }
 
 
-uint32_t
+int32_t
 StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 void*                  userCtx,
                                 const struct sockaddr* serverAddr,
@@ -351,11 +351,7 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
 
   if (clientData == NULL)
   {
-    StunPrint(clientData->logUserData,
-              clientData->Log_cb,
-              StunInfoCategory_Error,
-              "<STUNCLIENT> startBindTransaction() failed,  Not initialised or no memory");
-    return STUNCLIENT_CTX_UNKNOWN;
+      return STUNCLIENT_CTX_UNKNOWN;
   }
 
   memset( &m, 0, sizeof(m) );
