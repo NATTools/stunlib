@@ -40,10 +40,10 @@ typedef enum
   StunResult_BindOk,                     /* successful */
   StunResult_BindFail,                   /* Received BindErrorResp */
   StunResult_BindFailNoAnswer,           /* Bind Req failed - no contact with
-                                          *stun server */
+                                          * stun server */
   StunResult_BindFailUnauthorised,       /* passwd/username is incorrect */
   StunResult_CancelComplete,             /* Request is cancelled and timed out
-                                          **/
+                                         **/
   StunResult_ICMPResp,                   /* Received ICMP */
   StunResult_InternalError,
   StunResult_MalformedResp
@@ -51,7 +51,7 @@ typedef enum
 
 
 /* Signalled back to the caller as a paramter in the TURN callback (see TURNCB)
- **/
+**/
 
 
 typedef struct
@@ -61,11 +61,11 @@ typedef struct
   struct sockaddr_storage rflxAddr;
   struct sockaddr_storage srcAddr;
   struct sockaddr_storage dstBaseAddr;    /* The destination seen from the
-                                           *sender of the response */
-  uint32_t                rtt;            /* Rtt in microseconds */
-  uint32_t                retransmits;
-  uint32_t                ICMPtype;
-  uint32_t                ttl;
+                                           * sender of the response */
+  uint32_t rtt;                           /* Rtt in microseconds */
+  uint32_t retransmits;
+  uint32_t ICMPtype;
+  uint32_t ttl;
 } StunCallBackData_T;
 
 /* for output of managment info (optional) */
@@ -75,9 +75,9 @@ typedef void (* STUN_INFO_FUNC_PTR)(void*              userData,
 
 /* Signalling back to user e.g. result of BindResp.
  *   userCtx        - User provided context, as provided in
- *StunClient_startxxxx(userCtx,...)
+ * StunClient_startxxxx(userCtx,...)
  *   stunCbData     - User provided stun callback data. stunbind writes status
- *here. e.g. Alloc ok + reflexive + relay address
+ * here. e.g. Alloc ok + reflexive + relay address
  */
 typedef void (* STUNCB)(void*               userCtx,
                         StunCallBackData_T* stunCbData);
@@ -119,9 +119,9 @@ StunClient_free(STUN_CLIENT_DATA* clientData);
  *    Should be called (once only) before StunClient_startxxxxxx().
  *    InstanceData   - memory allocated by user, to be used by the StunClient.
  *    funcPtr        - Will be called by Stun when it outputs management info
- *and trace.
+ * and trace.
  *                     If this is NULL, then there is no output.  You can
- *provide a function such as below::
+ * provide a function such as below::
  *    userData       - void pointer to be returned with logger callback
  */
 void
@@ -137,31 +137,32 @@ StunClient_RegisterLogger(STUN_CLIENT_DATA*  clientData,
  * Optional, can be NULL. STUN does not write to this data.
  *     serverAddr       -  Address of TURN server in format  "a.b.c.d:port"
  *     baseAddr         -  Address of BASE in format  "a.b.c.d:port"
- *     proto            -  Optional context passed to sendFunc. eg. IPPROTO_UDP/TCP.
+ *     proto            -  Optional context passed to sendFunc. eg.
+ *IPPROTO_UDP/TCP.
  *     useRelay         -  True to send via TURN server
  *     uFrag            -  Combination of local and remote ufrag exchanged in
- *INVITE(LFRAG) / OK(RFRAG) in format <LFRAG>:<RFRAG>
+ * INVITE(LFRAG) / OK(RFRAG) in format <LFRAG>:<RFRAG>
  *     password         -  Remote password, exchanged in invite/ok.    \0
- *terminated string. Max 512 chars.
+ * terminated string. Max 512 chars.
  *     peerPriority     -  Candidate Priority. See ICE-19 spec.
  *     useCandidate     -
  *     iceControlling   -
  *     tieBreaker       -
  *     transactionId    -
  *     sockhandle       -  used as 1st parameter in STUN_SENDFUNC(), typically a
- *socket.
+ * socket.
  *     sendFunc         -  function used to send STUN packet.
- *send(sockhandle,buff, len, turnServerAddr, userCtx)
+ * send(sockhandle,buff, len, turnServerAddr, userCtx)
  *     stunCbFunc       -  user provided callback function used by turn to
- *signal the result of an allocation or channel bind etc...
+ * signal the result of an allocation or channel bind etc...
  *     stunCbData       -  user provided callback turn data. turn writes to this
- *data area.
+ * data area.
  *
  *     returns          -  Turn instance/context. Application should store this
- *in further calls to TurnClient_StartChannelBindReq(),
- *TurnClient_HandleIncResp().
+ * in further calls to TurnClient_StartChannelBindReq(),
+ * TurnClient_HandleIncResp().
  */
-uint32_t
+int32_t
 StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 void*                  userCtx,
                                 const struct sockaddr* serverAddr,
@@ -179,12 +180,19 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 STUN_SENDFUNC          sendFunc,
                                 STUNCB                 stunCbFunc,
                                 DiscussData*           discussData);        /*
+                                                                             *
                                                                              *nullptr
+                                                                             *
                                                                              *if
+                                                                             *
                                                                              *no
+                                                                             *
                                                                              *malicedata
+                                                                             *
                                                                              *should
+                                                                             *
                                                                              *be
+                                                                             *
                                                                              *sent.
                                                                              **/
 
@@ -202,12 +210,13 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           STUN_SENDFUNC          sendFunc,
                           STUNCB                 stunCbFunc,
                           DiscussData*           discussData);          /*NULL
-                                                                         *if
+                                                                         * if
+                                                                         *
                                                                          *none*/
 
 /*
  * This function must be called by the application every N msec. N must be same
- *as in StunClientBind_Init(instances, N)
+ * as in StunClientBind_Init(instances, N)
  */
 void
 StunClient_HandleTick(STUN_CLIENT_DATA* clientData,
