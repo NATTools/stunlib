@@ -315,22 +315,22 @@ CTEST(turnmessage, alternate_server_IPv6)
   StunMessage stunMsg;
 
   unsigned char stunBuf[120];
-  char          pad    = ' ';
+  char          pad = ' ';
 
   memset( &stunMsg, 0, sizeof(StunMessage) );
 
 
 
-                           uint8_t       ip6Addr[] =
-                           {0x20, 0x1, 0x4, 0x70, 0xdc, 0x88, 0x0, 0x2, 0x2, 0x26, 0x18, 0xff, 0xfe,
-                            0x92, 0x6d, 0x53};
+  uint8_t ip6Addr[] =
+  {0x20, 0x1, 0x4, 0x70, 0xdc, 0x88, 0x0, 0x2, 0x2, 0x26, 0x18, 0xff, 0xfe,
+   0x92, 0x6d, 0x53};
   stunMsg.msgHdr.msgType = STUN_MSG_AllocateErrorResponseMsg;
   memcpy(&stunMsg.msgHdr.id.octet,&idOctet,12);
 
   /*Add Error*/
   ASSERT_TRUE( stunlib_addError(&stunMsg, "Try Alternate",
                                 STUN_ERROR_TRY_ALTERNATE, pad) );
-  stunMsg.hasMappedAddress           = true;
+  stunMsg.hasMappedAddress = true;
   stunlib_setIP6Address(&stunMsg.mappedAddress,
                         ip6Addr,
                         3478);
@@ -351,10 +351,10 @@ CTEST(turnmessage, alternate_server_IPv6)
                                      NULL) );
 
   ASSERT_TRUE(stunMsg.hasMappedAddress);
-  ASSERT_TRUE( stunMsg.mappedAddress.familyType == STUN_ADDR_IPv6Family);
-  ASSERT_TRUE( stunMsg.mappedAddress.addr.v6.port == 3478);
-  ASSERT_TRUE( memcmp( stunMsg.mappedAddress.addr.v6.addr, ip6Addr,
-                           sizeof(ip6Addr) ) == 0);
+  ASSERT_TRUE(stunMsg.mappedAddress.familyType == STUN_ADDR_IPv6Family);
+  ASSERT_TRUE(stunMsg.mappedAddress.addr.v6.port == 3478);
+  ASSERT_TRUE(memcmp( stunMsg.mappedAddress.addr.v6.addr, ip6Addr,
+                      sizeof(ip6Addr) ) == 0);
 
 
 }

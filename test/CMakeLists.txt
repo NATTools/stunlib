@@ -13,6 +13,7 @@ function (sa_test name)
 endfunction()
 
 sa_test ( testvector )
+sa_test ( testvector_print )
 sa_test ( realworldpackets )
 sa_test ( stunclient )
 sa_test ( turnmessage )
