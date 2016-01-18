@@ -18,6 +18,7 @@ sa_test ( stunclient )
 sa_test ( turnmessage )
 sa_test ( stunserver )
 sa_test ( turnclient )
+sa_test ( stuntrace )
 
 
 

@@ -267,3 +267,45 @@ CTEST(turnmessage, decode_requestedAddrFamily_IPv6)
   ASSERT_TRUE(stunMsg.requestedAddrFamilyIPv6.family == 0x2);
 
 }
+
+CTEST(turnmessage, Alternate_server)
+{
+  StunMessage stunMsg;
+
+  unsigned char stunBuf[120];
+  char          pad    = ' ';
+  uint32_t      mapped = 3221225985U;
+  memset( &stunMsg, 0, sizeof(StunMessage) );
+
+
+  stunMsg.msgHdr.msgType = STUN_MSG_AllocateErrorResponseMsg;
+  memcpy(&stunMsg.msgHdr.id.octet,&idOctet,12);
+
+  /*Add Error*/
+  ASSERT_TRUE( stunlib_addError(&stunMsg, "Try Alternate",
+                                STUN_ERROR_TRY_ALTERNATE, pad) );
+  stunMsg.hasMappedAddress           = true;
+  stunMsg.mappedAddress.familyType   = STUN_ADDR_IPv4Family;
+  stunMsg.mappedAddress.addr.v4.addr = mapped;
+  stunMsg.mappedAddress.addr.v4.port = 3478;
+
+  ASSERT_TRUE( stunlib_encodeMessage(&stunMsg,
+                                     stunBuf,
+                                     120,
+                                     (unsigned char*)password,
+                                     strlen(password),
+                                     NULL) );
+
+  memset( &stunMsg, 0, sizeof(StunMessage) );
+
+  ASSERT_TRUE( stunlib_DecodeMessage(stunBuf,
+                                     120,
+                                     &stunMsg,
+                                     NULL,
+                                     NULL) );
+
+  ASSERT_TRUE(stunMsg.hasMappedAddress);
+  ASSERT_TRUE(stunMsg.mappedAddress.addr.v4.addr == mapped);
+  ASSERT_TRUE(stunMsg.mappedAddress.addr.v4.port == 3478);
+
+}
