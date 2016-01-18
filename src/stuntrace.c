@@ -181,9 +181,6 @@ handleStunRespIcmp(struct hiutResult* result,
   {
     if (result->currentTTL < result->user_max_ttl)
     {
-
-
-
       result->currentTTL++;
       while (result->pathElement[result->currentTTL].inactive &&
              result->currentTTL < result->path_max_ttl)
