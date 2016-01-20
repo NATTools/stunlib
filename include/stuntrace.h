@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAX_TTL 64
+#define MAX_TTL 40
 #define MAX_CONCECUTIVE_INACTIVE 4
 
 #define STUNTRACE_MAX_RETRANSMITS          3
@@ -63,7 +63,8 @@ struct hiutResult {
 
   /* Initial Length of first STUN packet (TTL=1) */
   uint32_t               stunLen;
-  struct hiutPathElement pathElement[MAX_TTL];
+  struct hiutPathElement pathElement[MAX_TTL+1];
+  bool remoteAlive;
   //struct hiutTTLinfo     ttlInfo[MAX_TTL];
   /* struct npa_trace       trace; */
 

@@ -54,12 +54,6 @@ StunClientMain(STUN_CLIENT_DATA* clientData,
                int               ctx,
                STUN_SIGNAL       sig,
                uint8_t*          payload);
-static void
-StunPrint(void*              userData,
-          STUN_INFO_FUNC_PTR Log_cb,
-          StunInfoCategory_T category,
-          const char*        fmt,
-          ...);
 
 static void
 StunClientFsm(STUN_TRANSACTION_DATA* trans,
@@ -99,7 +93,7 @@ TimerHasExpired(STUN_TRANSACTION_DATA* trans,
  * If the application has defined a callback function to handle the output
  * then this is called with the string and the severity.
  */
-static void
+void
 StunPrint(void*              userData,
           STUN_INFO_FUNC_PTR Log_cb,
           StunInfoCategory_T category,
@@ -150,7 +144,7 @@ TransIdIsEqual(const StunMsgId* a,
 
 static void
 StoreStunBindReq(STUN_TRANSACTION_DATA* trans,
-                 StunBindReqStruct*      pMsgIn)
+                 StunBindReqStruct*     pMsgIn)
 {
   /* copy whole msg */
   memcpy( &trans->stunBindReq, pMsgIn, sizeof(StunBindReqStruct) );
@@ -255,7 +249,7 @@ StunClient_Alloc(STUN_CLIENT_DATA** clientDataPtr)
 
   if (!clientDataPtr)
   {
-      return false;
+    return false;
   }
 
   clientData = malloc(sizeof *clientData);
@@ -351,7 +345,7 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
 
   if (clientData == NULL)
   {
-      return STUNCLIENT_CTX_UNKNOWN;
+    return STUNCLIENT_CTX_UNKNOWN;
   }
 
   memset( &m, 0, sizeof(m) );
@@ -398,7 +392,7 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                                                                         * none*/
 
 {
-  StunBindReqStruct      m;
+  StunBindReqStruct     m;
   STUN_TRANSACTION_DATA trans;
   StunMessage           stunMsg;
   uint8_t               stunBuff[STUN_MAX_PACKET_SIZE];
@@ -431,7 +425,6 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
 
   StoreStunBindReq(&trans, &m);
   BuildStunBindReq(&trans, &stunMsg);
-
   StunClientMain(clientData, STUNCLIENT_CTX_UNKNOWN, STUN_SIGNAL_BindReq,
                  (uint8_t*)&m);
   len = stunlib_encodeMessage(&stunMsg,
@@ -486,32 +479,43 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
     return;
   }
   /* Todo: Test if this is fr me.. */
-  (void)srcAddr;
+  StunPrint(clientData->logUserData,
+          clientData->Log_cb,
+          StunInfoCategory_Trace,
+          "<STUNTRACE> StunClient_HandleICMP: Got ICMP type: %i\n ", ICMPtype);
 
-  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  if ( ( (ICMPtype == 11) && (srcAddr->sa_family == AF_INET) ) ||
+       ( (ICMPtype == 3) && (srcAddr->sa_family == AF_INET6) ) )
   {
-    STUN_TRANSACTION_DATA* trans = &clientData->data[i];
-    if ( trans->inUse &&
-         TransIdIsEqual(&clientData->traceResult.currStunMsgId,
-                        &trans->stunBindReq.transactionId) )
+    for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
     {
-      StunRespStruct m;
-      gettimeofday(&trans->stop[trans->retransmits], NULL);
-      /* memcpy(&m.stunRespMessage, msg, sizeof(m.stunRespMessage)); */
-      sockaddr_copy( (struct sockaddr*)&m.srcAddr, srcAddr );
-      m.ICMPtype = ICMPtype;
-      m.ttl      = clientData->traceResult.currentTTL;
-      StunClientMain(clientData, i, STUN_SIGNAL_ICMPResp, (void*)&m);
-      return;
+      STUN_TRANSACTION_DATA* trans = &clientData->data[i];
+      if ( trans->inUse &&
+           TransIdIsEqual(&clientData->traceResult.currStunMsgId,
+                          &trans->stunBindReq.transactionId) )
+      {
+        StunRespStruct m;
+        gettimeofday(&trans->stop[trans->retransmits], NULL);
+        /* memcpy(&m.stunRespMessage, msg, sizeof(m.stunRespMessage)); */
+        sockaddr_copy( (struct sockaddr*)&m.srcAddr, srcAddr );
+        m.ICMPtype = ICMPtype;
+        m.ttl      = clientData->traceResult.currentTTL;
+        StunClientMain(clientData, i, STUN_SIGNAL_ICMPResp, (void*)&m);
+        return;
 
+      }
     }
-  }
+    StunPrint(clientData->logUserData,
+              clientData->Log_cb,
+              StunInfoCategory_Trace,
+              "<STUNCLIENT> no instance with transId, discarding, ICMP message\n ");
+  }else{
     StunPrint(clientData->logUserData,
             clientData->Log_cb,
             StunInfoCategory_Trace,
-            "<STUNCLIENT> no instance with transId, discarding, ICMP message\n ");
+            "<STUNTRACE> StunClient_HandleICMP: Ignoring ICMP Type, nothing to do\n ", ICMPtype);
+  }
 }
-
 
 /*
  * Cancel a transaction with  matching  transaction id
@@ -1144,7 +1148,7 @@ RetransmitLastReq(STUN_TRANSACTION_DATA*   trans,
                               trans->stunReqMsgBuf,
                               trans->stunReqMsgBufLen,
                               (struct sockaddr*)destAddr,
-                                trans->stunBindReq.proto,
+                              trans->stunBindReq.proto,
                               trans->stunBindReq.useRelay,
                               trans->stunBindReq.ttl);
 }
@@ -1424,7 +1428,7 @@ StunState_Idle(STUN_TRANSACTION_DATA* trans,
   case STUN_SIGNAL_BindReq:
   {
     StunBindReqStruct* pMsgIn = (StunBindReqStruct*)payload;
-    StunMessage       stunReqMsg;    /* decoded */
+    StunMessage        stunReqMsg;   /* decoded */
     /* clear instance data */
     InitInstData(trans);
     /* store msg */
