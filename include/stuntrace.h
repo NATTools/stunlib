@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAX_TTL 64
+#define MAX_TTL 40
 #define MAX_CONCECUTIVE_INACTIVE 4
 
 #define STUNTRACE_MAX_RETRANSMITS          3
@@ -49,12 +49,12 @@ struct hiutResult {
   STUN_SENDFUNC sendFunc;
 
 
-  int32_t currentTTL;
+  int32_t   currentTTL;
   StunMsgId currStunMsgId;
-  int32_t user_start_ttl;
-  int32_t user_max_ttl;
-  int32_t user_paralell_traces;
-  int32_t path_max_ttl;                 /*got port unreachable or STUN response
+  int32_t   user_start_ttl;
+  int32_t   user_max_ttl;
+  int32_t   user_paralell_traces;
+  int32_t   path_max_ttl;               /*got port unreachable or STUN response
                                         **/
   uint32_t                wait_ms;
   struct sockaddr_storage localAddr;
@@ -63,8 +63,9 @@ struct hiutResult {
 
   /* Initial Length of first STUN packet (TTL=1) */
   uint32_t               stunLen;
-  struct hiutPathElement pathElement[MAX_TTL];
-  //struct hiutTTLinfo     ttlInfo[MAX_TTL];
+  struct hiutPathElement pathElement[MAX_TTL + 1];
+  bool                   remoteAlive;
+  /* struct hiutTTLinfo     ttlInfo[MAX_TTL]; */
   /* struct npa_trace       trace; */
 
   /* Recurring traces*/

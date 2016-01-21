@@ -12,6 +12,29 @@ void
 StunStatusCallBack(void*               userCtx,
                    StunCallBackData_T* stunCbData);
 
+static bool
+isDstUnreachable(int32_t   ICMPtype,
+                 u_int16_t addrFamily)
+{
+  if ( ( (ICMPtype == 3) && (addrFamily == AF_INET) )  ||
+       ( (ICMPtype == 1) && (addrFamily == AF_INET6) ) )
+  {
+    return true;
+  }
+  return false;
+}
+
+static bool
+isTimeExceeded(int32_t   ICMPtype,
+               u_int16_t addrFamily)
+{
+  if ( ( (ICMPtype == 11) && (addrFamily == AF_INET) )  ||
+       ( (ICMPtype == 3) && (addrFamily == AF_INET6) ) )
+  {
+    return true;
+  }
+  return false;
+}
 
 
 void
@@ -96,12 +119,11 @@ handleStunNoAnswer(struct hiutResult* result)
 {
   result->pathElement[result->currentTTL].inactive = true;
   /* Hov many no answer in a row? */
-  if (numConcecutiveInactiveNodes(result) >= MAX_CONCECUTIVE_INACTIVE)
+  if (numConcecutiveInactiveNodes(result) >= MAX_CONCECUTIVE_INACTIVE &&
+     !result->remoteAlive)
   {
     bool done = result->num_traces < result->max_recuring ? false : true;
-
-    result->path_max_ttl = result->currentTTL-MAX_CONCECUTIVE_INACTIVE;
-
+    result->path_max_ttl = result->currentTTL - MAX_CONCECUTIVE_INACTIVE;
     sendCallback(result,
                  NULL,
                  result->currentTTL,
@@ -111,7 +133,6 @@ handleStunNoAnswer(struct hiutResult* result)
                  done);
     resartIfNotDone(result);
     return;
-
   }
 
   sendCallback(result,
@@ -122,18 +143,13 @@ handleStunNoAnswer(struct hiutResult* result)
                false,
                false);
 
-  if ( (result->currentTTL < result->user_max_ttl) &&
-       (result->currentTTL < result->path_max_ttl) )
+  if ( result->currentTTL < result->user_max_ttl )
   {
-    //
-    //result->pathElement[result->currentTTL].inactive = true;
-
     while (result->pathElement[result->currentTTL].inactive &&
            result->currentTTL < result->path_max_ttl)
     {
       result->currentTTL++;
     }
-
     stunlib_createId(&result->currStunMsgId,
                      rand(), result->currentTTL);
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
@@ -167,17 +183,34 @@ handleStunRespIcmp(struct hiutResult* result,
                    int                rtt,
                    int                retransmits)
 {
-  if (ttl >= result->user_max_ttl)
-  {
-    /*
-     *  stopAndExit(result);
-     */
-    /* Do callback to user here.. */
-  }
+  STUN_CLIENT_DATA* clientData = (STUN_CLIENT_DATA*) result->stunCtx;
 
-  /* printf("Type: %i\n", ICMPtype); */
-  if ( ( (ICMPtype == 11) && (srcAddr->sa_family == AF_INET) ) ||
-       ( (ICMPtype == 3) && (srcAddr->sa_family == AF_INET6) ) )
+  if ( (ttl == MAX_TTL) &&
+       isDstUnreachable(ICMPtype, srcAddr->sa_family) )
+  {
+    /* Part of far end alive test */
+    result->remoteAlive = true;
+    result->currentTTL  = 1;
+
+    stunlib_createId(&result->currStunMsgId,
+                     rand(), result->currentTTL);
+
+    StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
+                               result,
+                               (struct sockaddr*)&result->remoteAddr,
+                               (struct sockaddr*)&result->localAddr,
+                               false,
+                               result->username,
+                               result->password,
+                               result->currentTTL,
+                               result->currStunMsgId,
+                               result->sockfd,
+                               result->sendFunc,
+                               StunStatusCallBack,
+                               NULL );
+    return;
+  }
+  if ( isTimeExceeded(ICMPtype, srcAddr->sa_family) )
   {
     if (result->currentTTL < result->user_max_ttl)
     {
@@ -187,7 +220,6 @@ handleStunRespIcmp(struct hiutResult* result,
       {
         result->currentTTL++;
       }
-
       if (result->currentTTL <= result->path_max_ttl)
       {
         sendCallback(result,
@@ -214,7 +246,9 @@ handleStunRespIcmp(struct hiutResult* result,
                                    result->sendFunc,
                                    StunStatusCallBack,
                                    NULL );
-      }else{
+      }
+      else
+      {
         bool done = result->num_traces < result->max_recuring ? false : true;
         sendCallback(result,
                      srcAddr,
@@ -225,13 +259,14 @@ handleStunRespIcmp(struct hiutResult* result,
                      done);
         resartIfNotDone(result);
       }
-    }else{
-      //do nothing
+    }
+    else
+    {
+      /* do nothing */
     }
   }
-  else if ( (ICMPtype == 3) && (srcAddr->sa_family == AF_INET) )
+  else if ( isDstUnreachable(ICMPtype,srcAddr->sa_family) )
   {
-    /*Got port unreachable. We can stop now*/
     bool done = result->num_traces < result->max_recuring ? false : true;
 
     if (result->path_max_ttl >= ttl)
@@ -246,21 +281,17 @@ handleStunRespIcmp(struct hiutResult* result,
                    true,
                    done);
 
-      /* cancel any outstanding transactions */
-      for (int i = ttl + 1; i <= result->currentTTL; i++)
-      {
-        printf("Canceling transaction (%i)\n", i);
-        StunClient_cancelBindingTransaction( (STUN_CLIENT_DATA*)result->stunCtx,
-                                             result->currStunMsgId );
-      }
       resartIfNotDone(result);
-
-
     }
   }
   else
   {
-    printf("   Some sort of ICMP message. Ignoring\n");
+    StunPrint(clientData->logUserData,
+              clientData->Log_cb,
+              StunInfoCategory_Trace,
+              "<STUNTRACE> handleStunRespIcmp: Ignoring ICMP type: %i\n ",
+              ICMPtype);
+
   }
 }
 
@@ -274,41 +305,15 @@ handleStunRespSucsessfull(struct hiutResult* result,
 {
   /* char addr[SOCKADDR_MAX_STRLEN]; */
   (void) rflxAddr;
-  (void) rtt;
-  (void) ttl;
-  (void)retransmits;
-  /* TODO do callback here */
-  /*
-   *  printResultLine(out_format,
-   *               true,
-   *               ttl,
-   *               srcAddr,
-   *               rtt,
-   *               retransmits);
-   */
-  /* printf("   RFLX addr: '%s'\n", */
-  /*       sockaddr_toString(rflxAddr, */
-  /*                         addr, */
-  /*                         sizeof(addr), */
-  /*                         true)); */
+  if (ttl == MAX_TTL)
+  {
+    /* Part of far end alive test */
+    result->remoteAlive = true;
+    result->currentTTL  = 1;
 
-  /*Got STUN response. We can stop now*/
-  if ( sockaddr_sameAddr( (struct sockaddr*)&result->remoteAddr,srcAddr ) )
-  {
-    /* TODO do callback here */
-    /*
-     *  stopAndExit(0);
-     */
-  }
-  if (result->currentTTL < result->user_max_ttl)
-  {
-    while (result->pathElement[result->currentTTL].inactive &&
-           result->currentTTL < result->path_max_ttl)
-    {
-      result->currentTTL++;
-    }
     stunlib_createId(&result->currStunMsgId,
                      rand(), result->currentTTL);
+
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
@@ -322,8 +327,36 @@ handleStunRespSucsessfull(struct hiutResult* result,
                                result->sendFunc,
                                StunStatusCallBack,
                                NULL );
+      return;
   }
 
+  bool done = result->num_traces < result->max_recuring ? false : true;
+  if ( sockaddr_sameAddr( (struct sockaddr*)&result->remoteAddr,srcAddr ) )
+  {
+    if (result->path_max_ttl >= ttl)
+    {
+      result->path_max_ttl = ttl;
+      sendCallback(result,
+                   srcAddr,
+                   ttl,
+                   rtt,
+                   retransmits,
+                   true,
+                   done);
+
+      resartIfNotDone(result);
+      return;
+    }
+  }
+  result->path_max_ttl = ttl;
+  sendCallback(result,
+               srcAddr,
+               ttl,
+               rtt,
+               retransmits,
+               true,
+               done);
+  resartIfNotDone(result);
 }
 
 
@@ -332,7 +365,6 @@ void
 StunStatusCallBack(void*               userCtx,
                    StunCallBackData_T* stunCbData)
 {
-  /* char               addr[SOCKADDR_MAX_STRLEN]; */
   struct hiutResult* result = (struct hiutResult*)userCtx;
 
   if (result->pathElement[stunCbData->ttl].gotAnswer)
@@ -364,12 +396,9 @@ StunStatusCallBack(void*               userCtx,
     handleStunNoAnswer( (struct hiutResult*)userCtx );
     break;
   default:
-    printf("Should not happen (Probably a cancel OK)\n");
+    return;
   }
 }
-
-
-
 
 int
 StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
@@ -388,7 +417,7 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
 
   result = &clientData->traceResult;
 
-  result->currentTTL = 1;
+  result->currentTTL = MAX_TTL;
   result->userCtx    = userCtx;
   stunlib_createId(&result->currStunMsgId, rand(), 1);
   result->stunCtx = clientData;

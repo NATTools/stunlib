@@ -138,7 +138,7 @@ StunClient_RegisterLogger(STUN_CLIENT_DATA*  clientData,
  *     serverAddr       -  Address of TURN server in format  "a.b.c.d:port"
  *     baseAddr         -  Address of BASE in format  "a.b.c.d:port"
  *     proto            -  Optional context passed to sendFunc. eg.
- *IPPROTO_UDP/TCP.
+ * IPPROTO_UDP/TCP.
  *     useRelay         -  True to send via TURN server
  *     uFrag            -  Combination of local and remote ufrag exchanged in
  * INVITE(LFRAG) / OK(RFRAG) in format <LFRAG>:<RFRAG>
@@ -180,7 +180,6 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 STUN_SENDFUNC          sendFunc,
                                 STUNCB                 stunCbFunc,
                                 DiscussData*           discussData);
-
 uint32_t
 StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           void*                  userCtx,
@@ -259,6 +258,13 @@ void
 StunClient_dumpStats(STUN_CLIENT_DATA*  clientData,
                      STUN_INFO_FUNC_PTR logPtr,
                      void*              userData);
+
+void
+StunPrint(void*              userData,
+          STUN_INFO_FUNC_PTR Log_cb,
+          StunInfoCategory_T category,
+          const char*        fmt,
+          ...);
 
 
 #ifdef __cplusplus
