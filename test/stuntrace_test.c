@@ -89,17 +89,24 @@ CTEST(stuntrace, run_IPv4)
                                  1,
                                  StunTraceCallBack,
                                  sendPacket);
-  ASSERT_TRUE(len == 68);
-  ASSERT_TRUE(LastTTL == 1);
+  /* First alive probe */
+  ASSERT_TRUE(len == 224);
+  ASSERT_TRUE(LastTTL == 40);
 
+
+  StunClient_HandleICMP(clientData,
+                        (struct sockaddr*)&remoteAddr,
+                        3);
+  ASSERT_FALSE(Done);
+  ASSERT_FALSE(EndOfTrace);
+
+  /* First hop.. */
+  ASSERT_TRUE(LastTTL == 1);
   sockaddr_initFromString( (struct sockaddr*)&hop1Addr,
                            "192.168.1.1:45674" );
   StunClient_HandleICMP(clientData,
                         (struct sockaddr*)&hop1Addr,
                         11);
-  ASSERT_FALSE(Done);
-  ASSERT_FALSE(EndOfTrace);
-
   ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastHopAddr,
                                (struct sockaddr*)&hop1Addr ) );
 
@@ -145,8 +152,12 @@ CTEST(stuntrace, recurring_IPv4)
                                  2,
                                  StunTraceCallBack,
                                  sendPacket);
-  ASSERT_TRUE(len == 68);
-  ASSERT_TRUE(LastTTL == 1);
+  ASSERT_TRUE(len == 224);
+  ASSERT_TRUE(LastTTL == 40);
+
+  StunClient_HandleICMP(clientData,
+                        (struct sockaddr*)&remoteAddr,
+                        3);
 
   sockaddr_initFromString( (struct sockaddr*)&hop1Addr,
                            "192.168.1.1:45674" );
@@ -218,7 +229,10 @@ CTEST(stuntrace, no_answer_IPv4)
                                  1,
                                  StunTraceCallBack,
                                  sendPacket);
-  ASSERT_TRUE(len == 68);
+  ASSERT_TRUE(len == 224);
+  StunClient_HandleICMP(clientData,
+                        (struct sockaddr*)&remoteAddr,
+                        3);
 
   /* HOP 1 Answer */
   ASSERT_TRUE(LastTTL == 1);
@@ -291,7 +305,11 @@ CTEST(stuntrace, no_answer_recurring_IPv4)
                                  2,
                                  StunTraceCallBack,
                                  sendPacket);
-  ASSERT_TRUE(len == 68);
+  ASSERT_TRUE(len == 224);
+
+  StunClient_HandleICMP(clientData,
+                        (struct sockaddr*)&remoteAddr,
+                        3);
 
   /* HOP 1 Answer */
   ASSERT_TRUE(LastTTL == 1);
@@ -332,8 +350,8 @@ CTEST(stuntrace, no_answer_recurring_IPv4)
   ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastHopAddr,
                                (struct sockaddr*)&hop2Addr ) );
 
-  ASSERT_FALSE( Done);
-  ASSERT_TRUE( EndOfTrace);
+  ASSERT_FALSE(Done);
+  ASSERT_TRUE(EndOfTrace);
 
   /* HOP 1 Answer */
   ASSERT_TRUE(LastTTL == 1);
