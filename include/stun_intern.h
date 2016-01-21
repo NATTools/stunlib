@@ -97,15 +97,15 @@ struct StunClientStats
 
 typedef struct
 {
-  STUN_STATE       state;
-  bool             inUse;
-  uint32_t         inst;
+  STUN_STATE        state;
+  bool              inUse;
+  uint32_t          inst;
   StunBindReqStruct stunBindReq;
 
   uint8_t stunReqMsgBuf[STUN_MAX_PACKET_SIZE];         /* encoded STUN request
                                                         *   */
-  int     stunReqMsgBufLen;                            /* of encoded STUN
-                                                        *request */
+  int stunReqMsgBufLen;                                /* of encoded STUN
+                                                        * request */
 
   STUN_USER_CREDENTIALS userCredentials;
   bool                  authenticated;
@@ -130,14 +130,14 @@ typedef struct
   DiscussData discussData;
 
   struct StunClientStats stats;
-  STUN_CLIENT_DATA* client;
+  STUN_CLIENT_DATA*      client;
 
 } STUN_TRANSACTION_DATA;
 
 
 struct STUN_CLIENT_DATA
 {
-  void*            userCtx;
+  void*                 userCtx;
   STUN_TRANSACTION_DATA data [MAX_STUN_TRANSACTIONS];
 
 
@@ -145,7 +145,7 @@ struct STUN_CLIENT_DATA
   STUN_INFO_FUNC_PTR     Log_cb;
   void*                  logUserData;
   struct StunClientStats stats;
-  struct hiutResult traceResult;
+  struct hiutResult      traceResult;
 };
 
 
