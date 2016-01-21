@@ -348,15 +348,6 @@ handleStunRespSucsessfull(struct hiutResult* result,
       return;
     }
   }
-  result->path_max_ttl = ttl;
-  sendCallback(result,
-               srcAddr,
-               ttl,
-               rtt,
-               retransmits,
-               true,
-               done);
-  resartIfNotDone(result);
 }
 
 
