@@ -182,22 +182,36 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 DiscussData*           discussData);        /*
                                                                              *
                                                                              *
+                                                                             *
+                                                                             *
                                                                              *nullptr
+                                                                             *
+                                                                             *
                                                                              *
                                                                              *
                                                                              *if
                                                                              *
                                                                              *
+                                                                             *
+                                                                             *
                                                                              *no
+                                                                             *
+                                                                             *
                                                                              *
                                                                              *
                                                                              *malicedata
                                                                              *
                                                                              *
+                                                                             *
+                                                                             *
                                                                              *should
                                                                              *
                                                                              *
+                                                                             *
+                                                                             *
                                                                              *be
+                                                                             *
+                                                                             *
                                                                              *
                                                                              *
                                                                              *sent.
@@ -218,6 +232,8 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           STUNCB                 stunCbFunc,
                           DiscussData*           discussData);          /*NULL
                                                                          * if
+                                                                         *
+                                                                         *
                                                                          *
                                                                          *
                                                                          *none*/

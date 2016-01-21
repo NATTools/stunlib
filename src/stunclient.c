@@ -484,8 +484,8 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
           StunInfoCategory_Trace,
           "<STUNTRACE> StunClient_HandleICMP: Got ICMP type: %i\n ", ICMPtype);
 
-  if ( ( (ICMPtype == 11) && (srcAddr->sa_family == AF_INET) ) ||
-       ( (ICMPtype == 3) && (srcAddr->sa_family == AF_INET6) ) )
+  if ( ( (ICMPtype == 11 || ICMPtype == 3) && (srcAddr->sa_family == AF_INET) ) ||
+       ( (ICMPtype == 3 || ICMPtype == 1) && (srcAddr->sa_family == AF_INET6) ) )
   {
     for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
     {
