@@ -179,22 +179,7 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 uint32_t               sockhandle,
                                 STUN_SENDFUNC          sendFunc,
                                 STUNCB                 stunCbFunc,
-                                DiscussData*           discussData);        /*
-                                                                             *
-                                                                             *nullptr
-                                                                             *
-                                                                             *if
-                                                                             *
-                                                                             *no
-                                                                             *
-                                                                             *malicedata
-                                                                             *
-                                                                             *should
-                                                                             *
-                                                                             *be
-                                                                             *
-                                                                             *sent.
-                                                                             **/
+                                DiscussData*           discussData);
 
 uint32_t
 StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
@@ -209,11 +194,7 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           uint32_t               sockhandle,
                           STUN_SENDFUNC          sendFunc,
                           STUNCB                 stunCbFunc,
-                          DiscussData*           discussData);          /*NULL
-                                                                         * if
-                                                                         *
-                                                                         *none*/
-
+                          DiscussData*           discussData);
 /*
  * This function must be called by the application every N msec. N must be same
  * as in StunClientBind_Init(instances, N)
