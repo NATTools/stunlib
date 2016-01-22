@@ -397,14 +397,7 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
   StunMessage           stunMsg;
   uint8_t               stunBuff[STUN_MAX_PACKET_SIZE];
   uint32_t              len;
-  if (clientData == NULL)
-  {
-    StunPrint(clientData->logUserData,
-              clientData->Log_cb,
-              StunInfoCategory_Error,
-              "<STUNCLIENT> startStuntrace() failed,  Not initialised or no memory");
-    return 0;
-  }
+
   memset( &m, 0, sizeof(m) );
   m.userCtx = userCtx;
   sockaddr_copy( (struct sockaddr*)&m.serverAddr, serverAddr );

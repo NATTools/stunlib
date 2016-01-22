@@ -399,6 +399,14 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
                      STUN_TRACECB           traceCbFunc,
                      STUN_SENDFUNC          sendFunc)
 {
+  if (clientData == NULL)
+  {
+    return 0;
+  }
+  if (!sendFunc || !toAddr)
+  {
+    return 0;
+  }
   struct hiutResult* result;
   uint32_t           len;
 

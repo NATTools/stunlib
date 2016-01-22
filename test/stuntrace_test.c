@@ -64,7 +64,62 @@ StunTraceCallBack(void*                    userCtx,
   EndOfTrace = data->traceEnd;
 
 }
+CTEST(stuntrace, null_ptr)
+{
+  int               someData   = 3;
+  STUN_CLIENT_DATA* clientData = NULL;
 
+  struct sockaddr_storage localAddr, remoteAddr;
+  int                     sockfd = 4;
+
+  sockaddr_initFromString( (struct sockaddr*)&remoteAddr,
+                           "193.200.93.152:45674" );
+
+  sockaddr_initFromString( (struct sockaddr*)&localAddr,
+                           "192.168.1.34:45674" );
+
+
+
+
+  int len = StunTrace_startTrace(clientData,
+                                 &someData,
+                                 (const struct sockaddr*)&remoteAddr,
+                                 (const struct sockaddr*)&localAddr,
+                                 sockfd,
+                                 "test",
+                                 "tset",
+                                 1,
+                                 StunTraceCallBack,
+                                 sendPacket);
+
+  ASSERT_TRUE(len == 0);
+
+  StunClient_Alloc(&clientData);
+
+  len = StunTrace_startTrace(clientData,
+                             &someData,
+                             (const struct sockaddr*)&remoteAddr,
+                             (const struct sockaddr*)&localAddr,
+                             sockfd,
+                             "test",
+                             "tset",
+                             1,
+                             StunTraceCallBack,
+                             NULL);
+  ASSERT_TRUE(len == 0);
+
+  len = StunTrace_startTrace(clientData,
+                             &someData,
+                             NULL,
+                             (const struct sockaddr*)&localAddr,
+                             sockfd,
+                             "test",
+                             "tset",
+                             1,
+                             StunTraceCallBack,
+                             sendPacket);
+  ASSERT_TRUE(len == 0);
+}
 
 CTEST(stuntrace, run_IPv4)
 {
@@ -134,7 +189,7 @@ CTEST(stuntrace, run_IPv4_unhandled_ICMP)
   int               someData = 3;
   STUN_CLIENT_DATA* clientData;
 
-  Done = false;
+  Done       = false;
   EndOfTrace = false;
   struct sockaddr_storage localAddr, remoteAddr, hop1Addr, hop2Addr;
   int                     sockfd = 4;
