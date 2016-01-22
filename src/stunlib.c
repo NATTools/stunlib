@@ -1438,6 +1438,7 @@ stunDecodeUnknownAtr(StunAtrUnknown* pUnk,
                      int*            nBufLen,
                      int             atrLen)
 {
+  uint32_t padLen = calcPadLen(atrLen, 4);
   int i;
   if (*nBufLen < atrLen)
   {
@@ -1448,7 +1449,8 @@ stunDecodeUnknownAtr(StunAtrUnknown* pUnk,
     read_16(pBuf, &pUnk->attrType[i]);
   }
   pUnk->numAttributes = i;
-  *nBufLen           -= atrLen;
+  *nBufLen           -= ( atrLen + padLen );
+  *pBuf           += padLen;
   if ( i < (atrLen / 2) )
   {
     *nBufLen -= (atrLen - 2 * i);
