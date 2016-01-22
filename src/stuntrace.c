@@ -236,7 +236,7 @@ handleStunRespIcmp(struct hiutResult* result,
   }
   if ( isTimeExceeded(ICMPtype, srcAddr->sa_family) )
   {
-    if (result->currentTTL < result->user_max_ttl)
+    if (result->currentTTL < result->user_max_ttl - 1)
     {
       result->currentTTL++;
       while (result->pathElement[result->currentTTL].inactive &&
@@ -270,24 +270,20 @@ handleStunRespIcmp(struct hiutResult* result,
                                    result->sendFunc,
                                    StunStatusCallBack,
                                    NULL );
-      }
-      else
-      {
-        bool done = result->num_traces < result->max_recuring ? false : true;
-        sendCallback(result,
-                     srcAddr,
-                     ttl,
-                     rtt,
-                     retransmits,
-                     true,
-                     done);
-        resartIfNotDone(result);
+        return;
       }
     }
-    else
-    {
-      /* do nothing */
-    }
+
+    bool done = result->num_traces < result->max_recuring ? false : true;
+    sendCallback(result,
+                 srcAddr,
+                 ttl,
+                 rtt,
+                 retransmits,
+                 true,
+                 done);
+    resartIfNotDone(result);
+
   }
   else if ( isDstUnreachable(ICMPtype,srcAddr->sa_family) )
   {

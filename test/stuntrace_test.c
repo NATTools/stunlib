@@ -479,15 +479,15 @@ CTEST(stuntrace, run_IPv4_Stunresp_dead)
 
 
   StunTrace_startTrace(clientData,
-                                 &someData,
-                                 (const struct sockaddr*)&remoteAddr,
-                                 (const struct sockaddr*)&localAddr,
-                                 sockfd,
-                                 "test",
-                                 "tset",
-                                 1,
-                                 StunTraceCallBack,
-                                 sendPacket);
+                       &someData,
+                       (const struct sockaddr*)&remoteAddr,
+                       (const struct sockaddr*)&localAddr,
+                       sockfd,
+                       "test",
+                       "tset",
+                       1,
+                       StunTraceCallBack,
+                       sendPacket);
 
   /*Timeout is roughtly 160*50 ms*/
   for (int i = 0; i < 160; i++)
@@ -511,28 +511,28 @@ CTEST(stuntrace, run_IPv4_Stunresp_dead)
   {
     StunClient_HandleTick(clientData, 50);
   }
-  ASSERT_TRUE( LastTTL == 3);
+  ASSERT_TRUE(LastTTL == 3);
 
   for (int i = 0; i < 160; i++)
   {
     StunClient_HandleTick(clientData, 50);
   }
-  ASSERT_TRUE( LastTTL == 4);
+  ASSERT_TRUE(LastTTL == 4);
 
   for (int i = 0; i < 160; i++)
   {
     StunClient_HandleTick(clientData, 50);
   }
-  ASSERT_TRUE( LastTTL == 5);
+  ASSERT_TRUE(LastTTL == 5);
 
   for (int i = 0; i < 160; i++)
   {
     StunClient_HandleTick(clientData, 50);
   }
-  ASSERT_TRUE( LastTTL == 5);
+  ASSERT_TRUE(LastTTL == 5);
 
-  ASSERT_TRUE( Done);
-  ASSERT_TRUE( EndOfTrace);
+  ASSERT_TRUE(Done);
+  ASSERT_TRUE(EndOfTrace);
 }
 
 
@@ -599,6 +599,71 @@ CTEST(stuntrace, run_IPv4_Stunresp_end)
 
   ASSERT_TRUE(Done);
   ASSERT_TRUE(EndOfTrace);
+
+}
+
+CTEST(stuntrace, run_IPv4_Stunresp_max_ttl)
+{
+  int               someData = 3;
+  STUN_CLIENT_DATA* clientData;
+
+  struct sockaddr_storage localAddr, remoteAddr, hop1Addr;
+  int                     sockfd = 4;
+
+  sockaddr_initFromString( (struct sockaddr*)&remoteAddr,
+                           "193.200.93.152:45674" );
+
+  sockaddr_initFromString( (struct sockaddr*)&localAddr,
+                           "192.168.1.34:45674" );
+
+  StunClient_Alloc(&clientData);
+
+
+  int len = StunTrace_startTrace(clientData,
+                                 &someData,
+                                 (const struct sockaddr*)&remoteAddr,
+                                 (const struct sockaddr*)&localAddr,
+                                 sockfd,
+                                 "test",
+                                 "tset",
+                                 1,
+                                 StunTraceCallBack,
+                                 sendPacket);
+  /* First alive probe */
+  ASSERT_TRUE(len == 224);
+  ASSERT_TRUE(LastTTL == 40);
+  StunMessage m;
+  memset( &m, 0, sizeof(m) );
+  memcpy( &m.msgHdr.id,     &LastTransId, STUN_MSG_ID_SIZE);
+  memcpy( &m.msgHdr.cookie, StunCookie,   sizeof(m.msgHdr.cookie) );
+  m.msgHdr.msgType                = STUN_MSG_BindResponseMsg;
+  m.hasXorMappedAddress           = true;
+  m.xorMappedAddress.familyType   = STUN_ADDR_IPv4Family;
+  m.xorMappedAddress.addr.v4.addr = test_addr_ipv4;
+  m.xorMappedAddress.addr.v4.port = test_port_ipv4;
+
+  StunClient_HandleIncResp(clientData,
+                           &m,
+                           NULL);
+
+  /*Timeout is roughtly 160*50 ms*/
+  for (int i = 0; i < 160 * 38; i++)
+  {
+    StunClient_HandleTick(clientData, 50);
+  }
+  
+  /* First hop.. */
+  ASSERT_TRUE(LastTTL == 39);
+  sockaddr_initFromString( (struct sockaddr*)&hop1Addr,
+                           "192.168.1.1:45674" );
+  StunClient_HandleICMP(clientData,
+                        (struct sockaddr*)&hop1Addr,
+                        11);
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastHopAddr,
+                               (struct sockaddr*)&hop1Addr ) );
+
+  ASSERT_TRUE( Done);
+  ASSERT_TRUE( EndOfTrace);
 
 }
 
