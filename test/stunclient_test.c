@@ -142,6 +142,7 @@ StartBindTransaction(int n)
                                          4567,             /* uint64_t
                                                             *
                                                             *
+                                                            *
                                                             *0x932FF9B151263B36LL
                                                             * (tieBreaker) */
                                          LastTransId,
@@ -231,12 +232,12 @@ SimBindSuccessResp(bool IPv6,
 
 static void
 SimBindSuccessRespWrongId(bool IPv6,
-                   bool success)
+                          bool success)
 {
   StunMessage m;
   memset( &m, 0, sizeof(m) );
-  memcpy( &m.msgHdr.id, &m.msgHdr.cookie, STUN_MSG_ID_SIZE);
-  memcpy( &m.msgHdr.cookie, StunCookie,   sizeof(m.msgHdr.cookie) );
+  memcpy( &m.msgHdr.id,     &m.msgHdr.cookie, STUN_MSG_ID_SIZE);
+  memcpy( &m.msgHdr.cookie, StunCookie,       sizeof(m.msgHdr.cookie) );
   if (success)
   {
     m.msgHdr.msgType = STUN_MSG_BindResponseMsg;
@@ -427,7 +428,7 @@ CTEST(stunclient, CancelTrans_BindResp)
 
   /* NULL check first.. */
   ASSERT_FALSE(StunClient_cancelBindingTransaction(NULL,
-                                                  LastTransId) == ctx);
+                                                   LastTransId) == ctx);
 
   ASSERT_TRUE(StunClient_cancelBindingTransaction(stunInstance,
                                                   LastTransId) == ctx);
