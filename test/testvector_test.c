@@ -1084,7 +1084,9 @@ CTEST(testvector, unkowns_encode_decode)
                                      NULL,
                                      NULL) );
   ASSERT_TRUE(stunMsg.hasUnknownAttributes);
+}
 
-
-
+CTEST(testvector, stun_msg_len)
+{
+  ASSERT_TRUE( stunlib_StunMsgLen(unknwn) == 88 );
 }
