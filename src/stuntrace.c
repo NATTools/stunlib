@@ -12,9 +12,9 @@ void
 StunStatusCallBack(void*               userCtx,
                    StunCallBackData_T* stunCbData);
 
-static bool
-isDstUnreachable(int32_t   ICMPtype,
-                 u_int16_t addrFamily)
+bool
+isDstUnreachable(const int32_t   ICMPtype,
+                 const u_int16_t addrFamily)
 {
   if ( ( (ICMPtype == 3) && (addrFamily == AF_INET) )  ||
        ( (ICMPtype == 1) && (addrFamily == AF_INET6) ) )
@@ -24,9 +24,9 @@ isDstUnreachable(int32_t   ICMPtype,
   return false;
 }
 
-static bool
-isTimeExceeded(int32_t   ICMPtype,
-               u_int16_t addrFamily)
+bool
+isTimeExceeded(const int32_t   ICMPtype,
+               const u_int16_t addrFamily)
 {
   if ( ( (ICMPtype == 11) && (addrFamily == AF_INET) )  ||
        ( (ICMPtype == 3) && (addrFamily == AF_INET6) ) )

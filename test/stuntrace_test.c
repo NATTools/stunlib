@@ -515,12 +515,35 @@ CTEST(stuntrace, run_IPv4_Stunresp_end)
 
   ASSERT_TRUE( LastTTL == 2);
 
-  memcpy( &m.msgHdr.id,     &LastTransId, STUN_MSG_ID_SIZE);
+  memcpy(&m.msgHdr.id, &LastTransId, STUN_MSG_ID_SIZE);
   StunClient_HandleIncResp(clientData,
                            &m,
                            (struct sockaddr*)&remoteAddr);
 
-  ASSERT_TRUE( Done);
-  ASSERT_TRUE( EndOfTrace);
+  ASSERT_TRUE(Done);
+  ASSERT_TRUE(EndOfTrace);
+
+}
+
+CTEST(stuntrace, isDstUnreachable)
+{
+  ASSERT_TRUE( isDstUnreachable(3, AF_INET) );
+
+  ASSERT_FALSE( isDstUnreachable(5,AF_INET) );
+
+  ASSERT_TRUE( isDstUnreachable(1, AF_INET6) );
+  ASSERT_FALSE( isDstUnreachable(3, AF_INET6) );
+
+}
+
+CTEST(stuntrace, isTimeExceeded)
+{
+  ASSERT_TRUE( isTimeExceeded(11, AF_INET) );
+  ASSERT_FALSE( isTimeExceeded(3, AF_INET) );
+  ASSERT_FALSE( isTimeExceeded(5, AF_INET) );
+
+  ASSERT_TRUE( isTimeExceeded(3, AF_INET6) );
+  ASSERT_FALSE( isTimeExceeded(11, AF_INET6) );
+  ASSERT_FALSE( isTimeExceeded(5, AF_INET6) );
 
 }
