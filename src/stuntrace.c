@@ -118,9 +118,33 @@ void
 handleStunNoAnswer(struct hiutResult* result)
 {
   result->pathElement[result->currentTTL].inactive = true;
+  if (result->currentTTL == MAX_TTL)
+  {
+    /* Part of far end alive test */
+    result->remoteAlive = false;
+    result->currentTTL  = 1;
+
+    stunlib_createId(&result->currStunMsgId,
+                     rand(), result->currentTTL);
+
+    StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
+                               result,
+                               (struct sockaddr*)&result->remoteAddr,
+                               (struct sockaddr*)&result->localAddr,
+                               false,
+                               result->username,
+                               result->password,
+                               result->currentTTL,
+                               result->currStunMsgId,
+                               result->sockfd,
+                               result->sendFunc,
+                               StunStatusCallBack,
+                               NULL );
+    return;
+  }
   /* Hov many no answer in a row? */
-  if (numConcecutiveInactiveNodes(result) >= MAX_CONCECUTIVE_INACTIVE &&
-     !result->remoteAlive)
+  if ( (numConcecutiveInactiveNodes(result) >= MAX_CONCECUTIVE_INACTIVE) &&
+       !result->remoteAlive )
   {
     bool done = result->num_traces < result->max_recuring ? false : true;
     result->path_max_ttl = result->currentTTL - MAX_CONCECUTIVE_INACTIVE;
@@ -143,7 +167,7 @@ handleStunNoAnswer(struct hiutResult* result)
                false,
                false);
 
-  if ( result->currentTTL < result->user_max_ttl )
+  if (result->currentTTL < result->user_max_ttl)
   {
     while (result->pathElement[result->currentTTL].inactive &&
            result->currentTTL < result->path_max_ttl)
@@ -327,7 +351,7 @@ handleStunRespSucsessfull(struct hiutResult* result,
                                result->sendFunc,
                                StunStatusCallBack,
                                NULL );
-      return;
+    return;
   }
 
   bool done = result->num_traces < result->max_recuring ? false : true;
