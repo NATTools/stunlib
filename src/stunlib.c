@@ -1438,6 +1438,7 @@ stunDecodeUnknownAtr(StunAtrUnknown* pUnk,
                      int*            nBufLen,
                      int             atrLen)
 {
+  uint32_t padLen = calcPadLen(atrLen, 4);
   int i;
   if (*nBufLen < atrLen)
   {
@@ -1448,7 +1449,8 @@ stunDecodeUnknownAtr(StunAtrUnknown* pUnk,
     read_16(pBuf, &pUnk->attrType[i]);
   }
   pUnk->numAttributes = i;
-  *nBufLen           -= atrLen;
+  *nBufLen           -= ( atrLen + padLen );
+  *pBuf           += padLen;
   if ( i < (atrLen / 2) )
   {
     *nBufLen -= (atrLen - 2 * i);
@@ -3463,58 +3465,6 @@ stunlib_setIP6Address(StunIPAddress* pIpAddr,
     memcpy( &pIpAddr->addr.v6.addr, addr, sizeof(pIpAddr->addr.v6.addr) );
   }
 }
-
-int
-stunlib_compareIPAddresses(const StunIPAddress* pS1,
-                           const StunIPAddress* pS2)
-{
-  int res;
-  if (!pS1 && !pS2)
-  {
-    return 0;
-  }
-  if (!pS1)
-  {
-    return -1;
-  }
-  if (!pS2)
-  {
-    return 1;
-  }
-
-  if ( 0 != ( res = (pS1->familyType - pS2->familyType) ) )
-  {
-    return res;
-  }
-  if (pS1->familyType == STUN_ADDR_IPv4Family)
-  {
-    if ( 0 != ( res = (pS1->addr.v4.port - pS2->addr.v4.port) ) )
-    {
-      return res;
-    }
-    if ( 0 != ( res = (pS1->addr.v4.addr - pS2->addr.v4.addr) ) )
-    {
-      return res;
-    }
-  }
-  else
-  {
-    int i;
-    if ( 0 != ( res = (pS1->addr.v6.port - pS2->addr.v6.port) ) )
-    {
-      return res;
-    }
-    for (i = 0; i < 4; i++)
-    {
-      if ( 0 != (res = pS1->addr.v6.addr[i] - pS2->addr.v6.addr[i]) )
-      {
-        return res;
-      }
-    }
-  }
-  return 0;
-}
-
 
 uint32_t
 stunlib_calculateFingerprint(const uint8_t* buf,

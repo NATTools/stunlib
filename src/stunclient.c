@@ -397,14 +397,7 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
   StunMessage           stunMsg;
   uint8_t               stunBuff[STUN_MAX_PACKET_SIZE];
   uint32_t              len;
-  if (clientData == NULL)
-  {
-    StunPrint(clientData->logUserData,
-              clientData->Log_cb,
-              StunInfoCategory_Error,
-              "<STUNCLIENT> startStuntrace() failed,  Not initialised or no memory");
-    return 0;
-  }
+
   memset( &m, 0, sizeof(m) );
   m.userCtx = userCtx;
   sockaddr_copy( (struct sockaddr*)&m.serverAddr, serverAddr );
@@ -461,7 +454,6 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
       return;
     }
   }
-
   StunPrint(clientData->logUserData,
             clientData->Log_cb,
             StunInfoCategory_Trace,
@@ -478,14 +470,15 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
   {
     return;
   }
-  /* Todo: Test if this is fr me.. */
+  /* Todo: Test if this is for me.. */
   StunPrint(clientData->logUserData,
-          clientData->Log_cb,
-          StunInfoCategory_Trace,
-          "<STUNTRACE> StunClient_HandleICMP: Got ICMP type: %i\n ", ICMPtype);
+            clientData->Log_cb,
+            StunInfoCategory_Trace,
+            "<STUNTRACE> StunClient_HandleICMP: Got ICMP type: %i\n ",
+            ICMPtype);
 
-  if ( ( (ICMPtype == 11 || ICMPtype == 3) && (srcAddr->sa_family == AF_INET) ) ||
-       ( (ICMPtype == 3 || ICMPtype == 1) && (srcAddr->sa_family == AF_INET6) ) )
+  if ( isTimeExceeded(ICMPtype, srcAddr->sa_family) ||
+       isDstUnreachable(ICMPtype,srcAddr->sa_family) )
   {
     for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
     {
@@ -505,15 +498,14 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
 
       }
     }
+  }
+  else
+  {
     StunPrint(clientData->logUserData,
               clientData->Log_cb,
               StunInfoCategory_Trace,
-              "<STUNCLIENT> no instance with transId, discarding, ICMP message\n ");
-  }else{
-    StunPrint(clientData->logUserData,
-            clientData->Log_cb,
-            StunInfoCategory_Trace,
-            "<STUNTRACE> StunClient_HandleICMP: Ignoring ICMP Type, nothing to do\n ", ICMPtype);
+              "<STUNTRACE> StunClient_HandleICMP: Ignoring ICMP Type, nothing to do\n ",
+              ICMPtype);
   }
 }
 
@@ -530,10 +522,6 @@ StunClient_cancelBindingTransaction(STUN_CLIENT_DATA* clientData,
 {
   if (clientData == NULL)
   {
-    StunPrint(clientData->logUserData,
-              clientData->Log_cb,
-              StunInfoCategory_Error,
-              "<STUNCLIENT> cancelBindingTransaction() failed,  Not initialised or no memory");
     return STUNCLIENT_CTX_UNKNOWN;
   }
 

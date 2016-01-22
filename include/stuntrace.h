@@ -76,7 +76,13 @@ struct hiutResult {
   STUN_TRACECB traceCb;
 };
 
+bool
+isDstUnreachable(const int32_t   ICMPtype,
+                 const u_int16_t addrFamily);
 
+bool
+isTimeExceeded(const int32_t   ICMPtype,
+               const u_int16_t addrFamily);
 
 int
 StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,

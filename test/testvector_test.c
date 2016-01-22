@@ -89,6 +89,36 @@ static unsigned char respv6[] =
   "\xc8\xfb\x0b\x4c";   /*     CRC32 fingerprint */
 
 
+  static unsigned char unknwn[] =
+    "\x00\x01\x00\x58"    /*   Request type and message length */
+    "\x21\x12\xa4\x42"    /*   Magic cookie */
+    "\xb7\xe7\xa7\x01"    /* } */
+    "\xbc\x34\xd6\x86"    /* }  Transaction ID */
+    "\xfa\x87\xdf\xae"    /* } */
+    "\x80\x22\x00\x10"    /*     SOFTWARE attribute header */
+    "\x53\x54\x55\x4e"    /* } */
+    "\x20\x74\x65\x73"    /* }  User-agent... */
+    "\x74\x20\x63\x6c"    /* }  ...name */
+    "\x69\x65\x6e\x74"    /* } */
+    "\x00\x26\x00\x04"    /* Unkown attribute header */
+    "\x6e\x00\x01\xff"    /*    some value */
+    "\x80\x29\x00\x08"    /*     ICE-CONTROLLED attribute header */
+    "\x93\x2f\xf9\xb1"    /*  }  Pseudo-random tie breaker... */
+    "\x51\x26\x3b\x36"    /*  }   ...for ICE control */
+    "\x00\x06\x00\x09"    /*     USERNAME attribute header */
+    "\x65\x76\x74\x6a"    /*  } */
+    "\x3a\x68\x36\x76"    /*  }  Username (9 bytes) and padding (3 bytes) */
+    "\x59\x20\x20\x20"    /*  } */
+    "\x00\x08\x00\x14"    /*   MESSAGE-INTEGRITY attribute header */
+    "\x9a\xea\xa7\x0c"    /* } */
+    "\xbf\xd8\xcb\x56"    /* } */
+    "\x78\x1e\xf2\xb5"    /* }  HMAC-SHA1 fingerprint */
+    "\xb2\xd3\xf2\x49"    /* } */
+    "\xc1\xb5\x71\xa2"    /* } */
+    "\x80\x28\x00\x04"    /*   FINGERPRINT attribute header */
+    "\xe5\x7a\x3b\xcf";   /*  CRC32 fingerprint */
+
+
 static const char username[] = "evtj:h6vY";
 
 char password[]       = "VOkJxbRl1RmTxUk/WvJxBt";
@@ -998,4 +1028,66 @@ CTEST(testvector, dont_crash_if_atrLen_bogus_on_errors_messages)
                   &stunMsg,
                   NULL,
                   NULL) );
+}
+
+CTEST(testvector, unkowns_encode_decode)
+{
+  StunMessage stunMsg;
+  StunAtrUnknown unknowns;
+  unsigned char stunBuf[STUN_MAX_PACKET_SIZE];
+  FILE *f = fopen("/dev/null", "w+");
+  ASSERT_TRUE( stunlib_DecodeMessage(unknwn,
+                                     108,
+                                     &stunMsg,
+                                     &unknowns,
+                                     f) );
+
+
+  ASSERT_TRUE( stunMsg.msgHdr.msgType == STUN_MSG_BindRequestMsg);
+
+  ASSERT_TRUE( 0 == memcmp(&stunMsg.msgHdr.id.octet,&idOctet,12) );
+
+  ASSERT_TRUE( stunMsg.hasUsername);
+  ASSERT_TRUE( 0 ==
+               memcmp(&stunMsg.username.value, username,
+                      stunMsg.username.sizeValue) );
+
+  ASSERT_TRUE( stunMsg.hasSoftware);
+  ASSERT_TRUE( 0 ==
+               memcmp(&stunMsg.software.value, software,
+                      stunMsg.software.sizeValue) );
+
+  ASSERT_TRUE(unknowns.numAttributes == 1);
+
+  ASSERT_TRUE(stunMsg.hasControlled);
+  ASSERT_TRUE(stunMsg.controlled.value == tieBreaker);
+
+
+  memset( &stunMsg, 0, sizeof(StunMessage) );
+  stunMsg.msgHdr.msgType = STUN_MSG_AllocateResponseMsg;
+  memcpy(&stunMsg.msgHdr.id.octet,&idOctet,12);
+  stunlib_addError(&stunMsg, "UNKNOWN-ATTRIBUTE", 420, ' ');
+  stunMsg.hasUnknownAttributes = true;
+  memcpy(&stunMsg.unknownAttributes, &unknowns, sizeof unknowns);
+
+  memset(stunBuf, 0, sizeof(stunBuf));
+  ASSERT_TRUE( stunlib_encodeMessage(&stunMsg,
+                                     stunBuf,
+                                     sizeof(stunBuf),
+                                     (unsigned char*)password,
+                                     strlen(password),
+                                     f) );
+  memset(&stunMsg, 0, sizeof stunMsg);
+
+  ASSERT_TRUE( stunlib_DecodeMessage(stunBuf,
+                                     88,
+                                     &stunMsg,
+                                     NULL,
+                                     NULL) );
+  ASSERT_TRUE(stunMsg.hasUnknownAttributes);
+}
+
+CTEST(testvector, stun_msg_len)
+{
+  ASSERT_TRUE( stunlib_StunMsgLen(unknwn) == 88 );
 }
