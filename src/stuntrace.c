@@ -359,11 +359,6 @@ StunStatusCallBack(void*               userCtx,
 {
   struct hiutResult* result = (struct hiutResult*)userCtx;
 
-  if (result->pathElement[stunCbData->ttl].gotAnswer)
-  {
-    printf("Got this one already! Ignoring (%i)\n", stunCbData->ttl);
-    return;
-  }
   result->pathElement[stunCbData->ttl].gotAnswer = true;
 
   switch (stunCbData->stunResult)
