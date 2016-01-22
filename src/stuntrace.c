@@ -190,13 +190,6 @@ handleStunNoAnswer(struct hiutResult* result)
                                StunStatusCallBack,
                                NULL );
   }
-  else
-  {
-    /* TODO: Callabck here */
-    /*
-     *  stopAndExit(result);
-     */
-  }
 }
 
 void
@@ -207,8 +200,6 @@ handleStunRespIcmp(struct hiutResult* result,
                    int                rtt,
                    int                retransmits)
 {
-  STUN_CLIENT_DATA* clientData = (STUN_CLIENT_DATA*) result->stunCtx;
-
   if ( (ttl == MAX_TTL) &&
        isDstUnreachable(ICMPtype, srcAddr->sa_family) )
   {
@@ -273,7 +264,6 @@ handleStunRespIcmp(struct hiutResult* result,
         return;
       }
     }
-
     bool done = result->num_traces < result->max_recuring ? false : true;
     sendCallback(result,
                  srcAddr,
@@ -303,15 +293,6 @@ handleStunRespIcmp(struct hiutResult* result,
 
       resartIfNotDone(result);
     }
-  }
-  else
-  {
-    StunPrint(clientData->logUserData,
-              clientData->Log_cb,
-              StunInfoCategory_Trace,
-              "<STUNTRACE> handleStunRespIcmp: Ignoring ICMP type: %i\n ",
-              ICMPtype);
-
   }
 }
 
