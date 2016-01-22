@@ -1035,11 +1035,12 @@ CTEST(testvector, unkowns_encode_decode)
   StunMessage stunMsg;
   StunAtrUnknown unknowns;
   unsigned char stunBuf[STUN_MAX_PACKET_SIZE];
+  FILE *f = fopen("/dev/null", "w+");
   ASSERT_TRUE( stunlib_DecodeMessage(unknwn,
                                      108,
                                      &stunMsg,
                                      &unknowns,
-                                     NULL) );
+                                     f) );
 
 
   ASSERT_TRUE( stunMsg.msgHdr.msgType == STUN_MSG_BindRequestMsg);
@@ -1075,7 +1076,7 @@ CTEST(testvector, unkowns_encode_decode)
                                      sizeof(stunBuf),
                                      (unsigned char*)password,
                                      strlen(password),
-                                     NULL) );
+                                     f) );
   memset(&stunMsg, 0, sizeof stunMsg);
 
   ASSERT_TRUE( stunlib_DecodeMessage(stunBuf,
