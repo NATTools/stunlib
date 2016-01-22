@@ -153,6 +153,10 @@ CTEST(stuntrace, run_IPv4)
   ASSERT_TRUE(LastTTL == 40);
 
 
+  StunClient_HandleICMP(NULL,
+                        (struct sockaddr*)&remoteAddr,
+                        3);
+
   StunClient_HandleICMP(clientData,
                         (struct sockaddr*)&remoteAddr,
                         3);

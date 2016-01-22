@@ -229,6 +229,41 @@ SimBindSuccessResp(bool IPv6,
 
 }
 
+static void
+SimBindSuccessRespWrongId(bool IPv6,
+                   bool success)
+{
+  StunMessage m;
+  memset( &m, 0, sizeof(m) );
+  memcpy( &m.msgHdr.id, &m.msgHdr.cookie, STUN_MSG_ID_SIZE);
+  memcpy( &m.msgHdr.cookie, StunCookie,   sizeof(m.msgHdr.cookie) );
+  if (success)
+  {
+    m.msgHdr.msgType = STUN_MSG_BindResponseMsg;
+  }
+  else
+  {
+    m.msgHdr.msgType = STUN_MSG_BindErrorResponseMsg;
+  }
+
+  m.hasXorMappedAddress = true;
+
+  if (IPv6)
+  {
+    stunlib_setIP6Address(&m.xorMappedAddress, test_addr_ipv6, 0x4200);
+
+  }
+  else
+  {
+    m.xorMappedAddress.familyType   = STUN_ADDR_IPv4Family;
+    m.xorMappedAddress.addr.v4.addr = test_addr_ipv4;
+    m.xorMappedAddress.addr.v4.port = test_port_ipv4;
+  }
+
+  StunClient_HandleIncResp(stunInstance, &m, NULL);
+
+}
+
 CTEST_SETUP(data)
 {
   data->a       = 1;
@@ -360,7 +395,9 @@ CTEST(stunclient, WaitBindRespNotAut_BindSuccess)
 
   StartBindTransaction(0);
   StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
-
+  /*Just quick sanity if NULL ihandled propperly */
+  StunClient_HandleIncResp(NULL, NULL, NULL);
+  SimBindSuccessRespWrongId(runningAsIPv6, true);
   SimBindSuccessResp(runningAsIPv6, true);
   ASSERT_TRUE(stunResult == StunResult_BindOk);
   StunClient_free(stunInstance);
@@ -387,6 +424,10 @@ CTEST(stunclient, CancelTrans_BindResp)
   int ctx;
   ctx = StartBindTransaction(0);
   StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
+
+  /* NULL check first.. */
+  ASSERT_FALSE(StunClient_cancelBindingTransaction(NULL,
+                                                  LastTransId) == ctx);
 
   ASSERT_TRUE(StunClient_cancelBindingTransaction(stunInstance,
                                                   LastTransId) == ctx);
