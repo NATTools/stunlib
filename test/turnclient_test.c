@@ -459,6 +459,65 @@ CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 
 }
 
+CTEST(tunrclient, resultToString)
+{
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocOk),
+                     "TurnResult_AllocOk") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocFail),
+                     "TurnResult_AllocFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocFailNoAnswer),
+                     "TurnResult_AllocFailNoAnswer") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocUnauthorised),
+                     "TurnResult_AllocUnauthorised") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_CreatePermissionOk),
+                     "TurnResult_CreatePermissionOk") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_CreatePermissionFail),
+                     "TurnResult_CreatePermissionFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_CreatePermissionNoAnswer),
+                     "TurnResult_CreatePermissionNoAnswer") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_CreatePermissionQuotaReached),
+                     "TurnResult_CreatePermissionQuotaReached") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_PermissionRefreshFail),
+                     "TurnResult_PermissionRefreshFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_ChanBindOk),
+                     "TurnResult_ChanBindOk") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_ChanBindFail),
+                     "TurnResult_ChanBindFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_ChanBindFailNoanswer),
+                     "TurnResult_ChanBindFailNoanswer") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_RefreshFail),
+                     "TurnResult_RefreshFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_RefreshFailNoAnswer),
+                     "TurnResult_RefreshFailNoAnswer") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_RelayReleaseComplete),
+                     "TurnResult_RelayReleaseComplete") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_RelayReleaseFailed),
+                     "TurnResult_RelayReleaseFailed") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_InternalError),
+                     "TurnResult_InternalError") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_MalformedRespWaitAlloc),
+                     "TurnResult_MalformedRespWaitAlloc") == 0);
+
+ ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_Empty),
+                     "unknown turnresult ??") == 0);
+}
 
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
 {

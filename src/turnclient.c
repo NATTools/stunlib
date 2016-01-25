@@ -740,37 +740,44 @@ TurnResultToStr(TurnResult_T res)
 {
   switch (res)
   {
-  case TurnResult_AllocOk:                     return "TurnResult_AllocOk";
-  case TurnResult_AllocFail:                   return "TurnResult_AllocFail";
-  case TurnResult_AllocFailNoAnswer:           return
-      "TurnResult_AllocFailNoAnswer";
-  case TurnResult_AllocUnauthorised:           return
-      "TurnResult_AllocUnauthorised";
-  case TurnResult_CreatePermissionOk:          return
-      "TurnResult_CreatePermissionOk";
-  case TurnResult_CreatePermissionFail:        return
-      "TurnResult_CreatePermissionFail";
-  case TurnResult_CreatePermissionNoAnswer:    return
-      "TurnResult_CreatePermissionNoAnswer";
-  case TurnResult_CreatePermissionQuotaReached: return
-      "TurnResult_CreatePermissionQuotaReached";
-  case TurnResult_PermissionRefreshFail:       return
-      "TurnResult_PermissionRefreshFail";
-  case TurnResult_ChanBindOk:                  return "TurnResult_ChanBindOk";
-  case TurnResult_ChanBindFail:                return "TurnResult_ChanBindFail";
-  case TurnResult_ChanBindFailNoanswer:        return
-      "TurnResult_ChanBindFailNoanswer";
-  case TurnResult_RefreshFail:                 return "TurnResult_RefreshFail";
-  case TurnResult_RefreshFailNoAnswer:         return
-      "TurnResult_RefreshFailNoAnswer";
-  case TurnResult_RelayReleaseComplete:        return
-      "TurnResult_RelayReleaseComplete";
-  case TurnResult_RelayReleaseFailed:          return
-      "TurnResult_RelayReleaseFailed";
-  case TurnResult_InternalError:               return "TurnResult_InternalError";
-  case TurnResult_MalformedRespWaitAlloc:      return
-      "TurnResult_MalformedRespWaitAlloc";
-  default: return "unknown turnresult ??";
+  case TurnResult_AllocOk:
+    return "TurnResult_AllocOk";
+  case TurnResult_AllocFail:
+    return "TurnResult_AllocFail";
+  case TurnResult_AllocFailNoAnswer:
+    return "TurnResult_AllocFailNoAnswer";
+  case TurnResult_AllocUnauthorised:
+    return "TurnResult_AllocUnauthorised";
+  case TurnResult_CreatePermissionOk:
+    return "TurnResult_CreatePermissionOk";
+  case TurnResult_CreatePermissionFail:
+    return "TurnResult_CreatePermissionFail";
+  case TurnResult_CreatePermissionNoAnswer:
+    return "TurnResult_CreatePermissionNoAnswer";
+  case TurnResult_CreatePermissionQuotaReached:
+    return "TurnResult_CreatePermissionQuotaReached";
+  case TurnResult_PermissionRefreshFail:
+    return "TurnResult_PermissionRefreshFail";
+  case TurnResult_ChanBindOk:
+    return "TurnResult_ChanBindOk";
+  case TurnResult_ChanBindFail:
+    return "TurnResult_ChanBindFail";
+  case TurnResult_ChanBindFailNoanswer:
+    return "TurnResult_ChanBindFailNoanswer";
+  case TurnResult_RefreshFail:
+    return "TurnResult_RefreshFail";
+  case TurnResult_RefreshFailNoAnswer:
+    return "TurnResult_RefreshFailNoAnswer";
+  case TurnResult_RelayReleaseComplete:
+    return "TurnResult_RelayReleaseComplete";
+  case TurnResult_RelayReleaseFailed:
+    return "TurnResult_RelayReleaseFailed";
+  case TurnResult_InternalError:
+    return "TurnResult_InternalError";
+  case TurnResult_MalformedRespWaitAlloc:
+    return "TurnResult_MalformedRespWaitAlloc";
+  default: return
+        "unknown turnresult ??";
   }
 }
 
