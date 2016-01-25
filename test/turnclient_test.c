@@ -59,7 +59,7 @@ SendRawStun(const uint8_t*         buf,
 
   sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true);
 
-printf("TurnClienttest sendto: '%s'\n", addr_str);
+  printf("TurnClienttest sendto: '%s'\n", addr_str);
 
 }
 
@@ -67,7 +67,8 @@ static int
 StartAllocateTransaction()
 {
   runningAsIPv6 = false;
-  sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,"158.38.48.10:3478" );
+  sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,
+                           "158.38.48.10:3478" );
   /* kick off turn */
   return TurnClient_StartAllocateTransaction(&pInst,
                                              50,
@@ -112,7 +113,8 @@ StartAllocateTransaction_IPv6()
 static int
 StartSSODAAllocateTransaction()
 {
-sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,"158.38.v8.10:3478" );
+  sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,
+                           "158.38.v8.10:3478" );
 
   /* kick off turn */
   return TurnClient_StartAllocateTransaction(&pInst,
@@ -439,9 +441,9 @@ CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 
   /* 1 Tick */
   TurnClient_HandleTick(pInst);
-  ASSERT_TRUE(turnResult == TurnResult_Empty);
+  ASSERT_TRUE( turnResult == TurnResult_Empty);
   ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastAddress,
-                                (struct sockaddr*)&turnServerAddr ) );
+                               (struct sockaddr*)&turnServerAddr ) );
   /* 2 Tick */
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_Empty);
@@ -569,6 +571,10 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
   SimAllocResp(ctx, true, true, true, runningAsIPv6);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
 
+  ASSERT_TRUE (TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_TRUE ( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                                TurnClient_getRedirectedServerAddr(pInst) ) );
+
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
@@ -629,7 +635,9 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok)
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, true, true, true, runningAsIPv6);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
-
+  ASSERT_FALSE (TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_FALSE ( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                                TurnClient_getRedirectedServerAddr(pInst) ) );
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
