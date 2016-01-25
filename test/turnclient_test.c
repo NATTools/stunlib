@@ -905,7 +905,10 @@ CTEST(turnclient, Allocated_ChanBindReqOk)
   sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
 
   ctx = GotoAllocatedState(12);
-  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+  ASSERT_TRUE( TurnClient_StartChannelBindReq(pInst, 0x4001,
+                                              (struct sockaddr*)&peerIp) );
+  ASSERT_FALSE( TurnClient_StartChannelBindReq(pInst, 0x4001,
+                                              (struct sockaddr*)&peerIp) );
   TurnClient_HandleTick(pInst);
   Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
   TurnClient_HandleTick(pInst);
@@ -1346,9 +1349,9 @@ CTEST(turnclient, sendpacket_un_bound)
   TurnStats_T             stats;
 
   unsigned char buf[300];
-  int offset = 56;
-  char data[] = "Some data to be sendt. Here and there.\0";
-  memcpy(buf+offset, data, sizeof data);
+  int           offset = 56;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  memcpy(buf + offset, data, sizeof data);
 
   sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
 
@@ -1356,9 +1359,9 @@ CTEST(turnclient, sendpacket_un_bound)
 
   TurnClientGetStats(pInst,
                      &stats);
-  ASSERT_TRUE( stats.Retransmits == 0);
-  ASSERT_TRUE( stats.Failures == 0);
-  ASSERT_FALSE( stats.channelBound);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_FALSE(stats.channelBound);
 
   ASSERT_TRUE( TurnClient_SendPacket(pInst,
                                      buf,
@@ -1368,8 +1371,8 @@ CTEST(turnclient, sendpacket_un_bound)
                                      (struct sockaddr*)&peerIp,
                                      true) );
 
-  //printf("Buf: (%s)\n", (char*)latestBuf + 36);
-  //printf("Buf: (%s)\n", data);
+  /* printf("Buf: (%s)\n", (char*)latestBuf + 36); */
+  /* printf("Buf: (%s)\n", data); */
 
   ASSERT_TRUE(strcmp( (char*)latestBuf + 36, data ) == 0);
 
