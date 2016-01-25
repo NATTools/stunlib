@@ -36,7 +36,7 @@ TurnStatusCallBack(void*               ctx,
 {
   (void) ctx;
   turnResult = retData->turnResult;
-  printf("Got TURN status callback (Result (%i)\n", retData->turnResult);
+  //printf("Got TURN status callback (Result (%i)\n", retData->turnResult);
 
 }
 
@@ -49,7 +49,7 @@ SendRawStun(const uint8_t*         buf,
 {
   (void) ctx;
   (void) len;
-  char addr_str[SOCKADDR_MAX_STRLEN];
+//  char addr_str[SOCKADDR_MAX_STRLEN];
   /* find the transaction id  so we can use this in the simulated resp */
 
 
@@ -57,9 +57,9 @@ SendRawStun(const uint8_t*         buf,
 
   sockaddr_copy( (struct sockaddr*)&LastAddress, addr );
 
-  sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true);
+  //sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true);
 
-  printf("TurnClienttest sendto: '%s'\n", addr_str);
+  //printf("TurnClienttest sendto: '%s'\n", addr_str);
 
 }
 
@@ -569,11 +569,11 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
 
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, true, true, true, runningAsIPv6);
-  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  ASSERT_TRUE( turnResult == TurnResult_AllocOk);
 
-  ASSERT_TRUE (TurnClient_hasBeenRedirected(pInst) );
-  ASSERT_TRUE ( sockaddr_alike( (struct sockaddr*)&LastAddress,
-                                TurnClient_getRedirectedServerAddr(pInst) ) );
+  ASSERT_TRUE( TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                               TurnClient_getRedirectedServerAddr(pInst) ) );
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -635,8 +635,8 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok)
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, true, true, true, runningAsIPv6);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
-  ASSERT_FALSE (TurnClient_hasBeenRedirected(pInst) );
-  ASSERT_FALSE ( sockaddr_alike( (struct sockaddr*)&LastAddress,
+  ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastAddress,
                                 TurnClient_getRedirectedServerAddr(pInst) ) );
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -875,6 +875,7 @@ CTEST(turnclient, Allocated_ChanBindReqOk)
 {
   struct sockaddr_storage peerIp;
   int                     ctx;
+  TurnStats_T             stats;
   sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
 
   ctx = GotoAllocatedState(12);
@@ -883,6 +884,12 @@ CTEST(turnclient, Allocated_ChanBindReqOk)
   Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE( stats.Retransmits == 0);
+  ASSERT_TRUE( stats.Failures == 0);
+  ASSERT_TRUE( stats.channelBound == 0);
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
