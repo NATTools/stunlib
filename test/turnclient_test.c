@@ -708,6 +708,7 @@ CTEST(turnclient, WaitAllocResp_AllocRespOk)
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+  TurnClient_free(pInst);
 
 }
 
