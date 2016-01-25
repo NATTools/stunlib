@@ -889,7 +889,7 @@ CTEST(turnclient, Allocated_ChanBindReqOk)
                      &stats);
   ASSERT_TRUE( stats.Retransmits == 0);
   ASSERT_TRUE( stats.Failures == 0);
-  ASSERT_TRUE( stats.channelBound == 0);
+  ASSERT_TRUE( stats.channelBound );
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
