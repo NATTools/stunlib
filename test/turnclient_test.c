@@ -28,6 +28,7 @@ static const uint8_t StunCookie[] = STUN_MAGIC_COOKIE_ARRAY;
 
 TurnResult_T       turnResult;
 TurnCallBackData_T latestResult;
+uint8_t            latestBuf[1600];
 
 struct sockaddr_storage turnServerAddr;
 TURN_INSTANCE_DATA*     pInst;
@@ -60,6 +61,10 @@ SendRawStun(const uint8_t*         buf,
   memcpy(&LastTransId, &buf[8], STUN_MSG_ID_SIZE);
 
   sockaddr_copy( (struct sockaddr*)&LastAddress, addr );
+  if (len < sizeof latestBuf)
+  {
+    memcpy(latestBuf, buf, len);
+  }
 
   /* sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true); */
 
@@ -554,7 +559,7 @@ CTEST(turnclient, WaitAllocRespNotAutSSODA_AllocRspOk)
   ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimSSODAAllocResp(ctx, true, true, true);
-  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  ASSERT_TRUE( turnResult == TurnResult_AllocOk);
 
   ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&latestResult.TurnResultData.
                                AllocResp.relAddrIPv4,
@@ -1264,7 +1269,6 @@ CTEST(turnclient, isTurnChan)
 }
 
 
-
 CTEST(turnclient, GetErrorReason)
 {
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(3, 0),"Try Alternate") );
@@ -1294,4 +1298,82 @@ CTEST(turnclient, GetErrorReason)
 
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(2, 43),"???") );
 
+}
+
+CTEST(turnclient, sendpacket_bound)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[] =
+    "123456789abcdef123456789Some data to be sendt. Here and there.\0";
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE( stats.Retransmits == 0);
+  ASSERT_TRUE( stats.Failures == 0);
+  ASSERT_TRUE( stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof buf - 24,
+                                     24,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf + 4, (char*)buf + 24 ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, sendpacket_un_bound)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[300];
+  int offset = 56;
+  char data[] = "Some data to be sendt. Here and there.\0";
+  memcpy(buf+offset, data, sizeof data);
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE( stats.Retransmits == 0);
+  ASSERT_TRUE( stats.Failures == 0);
+  ASSERT_FALSE( stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof data,
+                                     offset,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
+  //printf("Buf: (%s)\n", (char*)latestBuf + 36);
+  //printf("Buf: (%s)\n", data);
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf + 36, data ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
