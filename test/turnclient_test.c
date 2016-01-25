@@ -11,17 +11,9 @@
 #define  MAX_INSTANCES  5
 #define  TEST_THREAD_CTX 1
 
-typedef  struct
-{
-  uint32_t a;
-  uint8_t  b;
-}
-AppCtx_T;
 
-static AppCtx_T AppCtx[MAX_INSTANCES];
+
 /* static TurnCallBackData_T TurnCbData[MAX_INSTANCES]; */
-
-static AppCtx_T CurrAppCtx;
 
 /* static int            TestNo; */
 /* static uint32_t StunDefaultTimeoutList[STUNCLIENT_MAX_RETRANSMITS */
@@ -67,20 +59,15 @@ SendRawStun(const uint8_t*         buf,
 
   sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true);
 
-  printf("TurnClienttest sendto: '%s'\n", addr_str);
+printf("TurnClienttest sendto: '%s'\n", addr_str);
 
 }
 
 static int
-StartAllocateTransaction(int n)
+StartAllocateTransaction()
 {
-  n = 0;   /* ntot sure we need n... TODO: fixme */
-  /* struct sockaddr_storage addr; */
-
-  CurrAppCtx.a =  AppCtx[n].a = 100 + n;
-  CurrAppCtx.b =  AppCtx[n].b = 200 + n;
-
-
+  runningAsIPv6 = false;
+  sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,"158.38.48.10:3478" );
   /* kick off turn */
   return TurnClient_StartAllocateTransaction(&pInst,
                                              50,
@@ -91,9 +78,30 @@ StartAllocateTransaction(int n)
                                              "pem",
                                              "pem",
                                              0,
-                                             SendRawStun,               /* send
-                                                                         * func
-                                                                         **/
+                                             SendRawStun,
+                                             TurnStatusCallBack,
+                                             false,
+                                             0);
+
+}
+
+static int
+StartAllocateTransaction_IPv6()
+{
+  struct sockaddr_storage addr;
+  sockaddr_initFromString( (struct sockaddr*)&addr,"158.38.48.10:3478" );
+  runningAsIPv6 = true;
+  /* kick off turn */
+  return TurnClient_StartAllocateTransaction(&pInst,
+                                             50,
+                                             NULL,
+                                             "test",
+                                             NULL,
+                                             (struct sockaddr*)&addr,
+                                             "pem",
+                                             "pem",
+                                             AF_INET6,
+                                             SendRawStun,
                                              TurnStatusCallBack,
                                              false,
                                              0);
@@ -102,14 +110,9 @@ StartAllocateTransaction(int n)
 
 
 static int
-StartSSODAAllocateTransaction(int n)
+StartSSODAAllocateTransaction()
 {
-  n = 0;   /* ntot sure we need n... TODO: fixme */
-  /* struct sockaddr_storage addr; */
-
-  CurrAppCtx.a =  AppCtx[n].a = 100 + n;
-  CurrAppCtx.b =  AppCtx[n].b = 200 + n;
-
+sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,"158.38.v8.10:3478" );
 
   /* kick off turn */
   return TurnClient_StartAllocateTransaction(&pInst,
@@ -398,7 +401,7 @@ Sim_RefreshError(int      ctx,
 static int
 GotoAllocatedState(int appCtx)
 {
-  int ctx = StartAllocateTransaction(appCtx);
+  int ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(appCtx, true, 4, 1, true, true, false);   /* 401, has
                                                                     * realm has
@@ -432,12 +435,12 @@ Sim_TimerRefreshPermission(int ctx)
 
 CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 {
-  StartAllocateTransaction(0);
+  StartAllocateTransaction();
 
   /* 1 Tick */
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_Empty);
-  ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastAddress,
                                 (struct sockaddr*)&turnServerAddr ) );
   /* 2 Tick */
   TurnClient_HandleTick(pInst);
@@ -515,14 +518,14 @@ CTEST(tunrclient, resultToString)
   ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_MalformedRespWaitAlloc),
                      "TurnResult_MalformedRespWaitAlloc") == 0);
 
- ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_Empty),
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_Empty),
                      "unknown turnresult ??") == 0);
 }
 
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, true, true, true, runningAsIPv6);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
@@ -536,7 +539,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
 CTEST(turnclient, WaitAllocRespNotAutSSODA_AllocRspOk)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimSSODAAllocResp(ctx, true, true, true);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
@@ -550,7 +553,7 @@ CTEST(turnclient, WaitAllocRespNotAutSSODA_AllocRspOk)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
 {
   int ctx;
-  ctx = StartAllocateTransaction(11);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 3, 0, false, false, true);    /* 300, alt
                                                                   * server */
@@ -577,7 +580,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf1)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, false, true, true, runningAsIPv6);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
@@ -590,7 +593,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf1)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf2)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, true, false, true, runningAsIPv6);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
@@ -603,7 +606,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf2)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf3)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, true, true, false, runningAsIPv6);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
@@ -616,7 +619,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf3)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok)
 {
   int ctx;
-  ctx = StartAllocateTransaction(9);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
                                                                  * realm and
@@ -636,7 +639,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_ErrNot401)
 {
   int ctx;
-  ctx = StartAllocateTransaction(15);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 4, false, false, false);   /* 404, no
                                                                   * realm, no
@@ -652,7 +655,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_ErrNot401)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf1)
 {
   int ctx;
-  ctx = StartAllocateTransaction(15);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, false, true, false);   /* 401, no
                                                                   * realm, nonce
@@ -666,7 +669,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf1)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf2)
 {
   int ctx;
-  ctx = StartAllocateTransaction(15);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, false, false);   /* 401, realm,
                                                                   * no nonce */
@@ -681,7 +684,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf2)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf3)
 {
   int ctx;
-  ctx = StartAllocateTransaction(11);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 3, 0, false, false, false);    /* 300,
                                                                     * missing
@@ -697,7 +700,25 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf3)
 CTEST(turnclient, WaitAllocResp_AllocRespOk)
 {
   int ctx;
-  ctx = StartAllocateTransaction(9);
+  ctx = StartAllocateTransaction();
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
+                                                                 * realm and
+                                                                 * nonce */
+  TurnClient_HandleTick(pInst);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6);
+  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+  TurnClient_free(pInst);
+
+}
+
+CTEST(turnclient, WaitAllocResp_AllocRespOk_IPv6)
+{
+  int ctx;
+  ctx = StartAllocateTransaction_IPv6();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
                                                                  * realm and
@@ -716,7 +737,7 @@ CTEST(turnclient, WaitAllocResp_AllocRespOk)
 CTEST(turnclient, WaitAllocResp_SSODA_AllocRespOk)
 {
   int ctx;
-  ctx = StartSSODAAllocateTransaction(9);
+  ctx = StartSSODAAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
                                                                  * realm and
@@ -735,7 +756,7 @@ CTEST(turnclient, WaitAllocResp_SSODA_AllocRespOk)
 CTEST(turnclient, WaitAllocResp_AllocRespErr)
 {
   int ctx;
-  ctx = StartAllocateTransaction(9);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);      /* 401, has
                                                                     * realm and
@@ -760,7 +781,7 @@ CTEST(turnclient, WaitAllocResp_AllocRespErr)
 CTEST(turnclient, WaitAllocResp_Retry)
 {
   int ctx, i;
-  ctx = StartAllocateTransaction(9);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);      /* 401, has
                                                                     * realm and
