@@ -20,11 +20,14 @@
 /* ] = {100, 0}; */
 static StunMsgId               LastTransId;
 static struct sockaddr_storage LastAddress;
-static bool                    runningAsIPv6;
+
+
+static bool runningAsIPv6;
 
 static const uint8_t StunCookie[] = STUN_MAGIC_COOKIE_ARRAY;
 
-TurnResult_T turnResult;
+TurnResult_T       turnResult;
+TurnCallBackData_T latestResult;
 
 struct sockaddr_storage turnServerAddr;
 TURN_INSTANCE_DATA*     pInst;
@@ -36,7 +39,8 @@ TurnStatusCallBack(void*               ctx,
 {
   (void) ctx;
   turnResult = retData->turnResult;
-  //printf("Got TURN status callback (Result (%i)\n", retData->turnResult);
+  memcpy(&latestResult, retData, sizeof latestResult);
+  /* printf("Got TURN status callback (Result (%i)\n", retData->turnResult); */
 
 }
 
@@ -49,17 +53,17 @@ SendRawStun(const uint8_t*         buf,
 {
   (void) ctx;
   (void) len;
-//  char addr_str[SOCKADDR_MAX_STRLEN];
-  /* find the transaction id  so we can use this in the simulated resp */
+/*  char addr_str[SOCKADDR_MAX_STRLEN]; */
+/* find the transaction id  so we can use this in the simulated resp */
 
 
   memcpy(&LastTransId, &buf[8], STUN_MSG_ID_SIZE);
 
   sockaddr_copy( (struct sockaddr*)&LastAddress, addr );
 
-  //sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true);
+  /* sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true); */
 
-  //printf("TurnClienttest sendto: '%s'\n", addr_str);
+  /* printf("TurnClienttest sendto: '%s'\n", addr_str); */
 
 }
 
@@ -229,13 +233,12 @@ SimSSODAAllocResp(int  ctx,
     m.hasXorRelayAddressIPv6 = true;
     stunlib_setIP6Address(&m.xorRelayAddressIPv6, addr, 0x4200);
 
-
-
     m.hasXorRelayAddressIPv4           = true;
     m.xorRelayAddressIPv4.familyType   = STUN_ADDR_IPv4Family;
     m.xorRelayAddressIPv4.addr.v4.addr = 3251135384UL;    /* "193.200.99.152" */
     m.xorRelayAddressIPv4.addr.v4.port = 42000;
 
+    m.hasXorRelayAddressSSODA = true;
   }
 
   /* XOR mapped addr*/
@@ -540,11 +543,28 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
 
 CTEST(turnclient, WaitAllocRespNotAutSSODA_AllocRspOk)
 {
-  int ctx;
+  int                     ctx;
+  struct sockaddr_storage relayIPv4;
+  struct sockaddr_storage relayIPv6;
+  sockaddr_initFromString( (struct sockaddr*)&relayIPv4,
+                           "193.200.99.152:42000" );
+  sockaddr_initFromString( (struct sockaddr*)&relayIPv6,
+                           "[2001:470:dc88:2:226:18ff:fe92:6d53]:16896" );
+
   ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimSSODAAllocResp(ctx, true, true, true);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&latestResult.TurnResultData.
+                               AllocResp.relAddrIPv4,
+                               (struct sockaddr*)&relayIPv4 ) );
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&latestResult.TurnResultData.
+                               AllocResp.relAddrIPv6,
+                               (struct sockaddr*)&relayIPv6 ) );
+  ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&latestResult.TurnResultData.
+                                AllocResp.relAddrIPv4,
+                                (struct sockaddr*)&relayIPv6 ) );
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -751,7 +771,8 @@ CTEST(turnclient, WaitAllocResp_SSODA_AllocRespOk)
                                                                  * realm and
                                                                  * nonce */
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6);
+  /* SimAllocResp(ctx, true, true, true, runningAsIPv6); */
+  SimSSODAAllocResp(ctx, true, true, true);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -887,9 +908,9 @@ CTEST(turnclient, Allocated_ChanBindReqOk)
 
   TurnClientGetStats(pInst,
                      &stats);
-  ASSERT_TRUE( stats.Retransmits == 0);
-  ASSERT_TRUE( stats.Failures == 0);
-  ASSERT_TRUE( stats.channelBound );
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_TRUE(stats.channelBound);
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
