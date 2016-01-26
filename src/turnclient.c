@@ -2170,6 +2170,7 @@ TurnState_WaitAllocRespNotAut(TURN_INSTANCE_DATA* pInst,
     {
       StartAllocRefreshTimer(pInst);
       SetNextState(pInst, TURN_STATE_Allocated);
+      StartStunKeepAliveTimer(pInst);
       AllocateResponseCallback(pInst);
     }
     else
@@ -2291,6 +2292,7 @@ TurnState_WaitAllocResp(TURN_INSTANCE_DATA* pInst,
     {
       StartAllocRefreshTimer(pInst);
       SetNextState(pInst, TURN_STATE_Allocated);
+      StartStunKeepAliveTimer(pInst);
       AllocateResponseCallback(pInst);
 
     }
@@ -2459,6 +2461,7 @@ TurnState_WaitAllocRefreshResp(TURN_INSTANCE_DATA* pInst,
     StopTimer(pInst, TURN_SIGNAL_TimerRetransmit);
     StartAllocRefreshTimer(pInst);
     SetNextState(pInst, TURN_STATE_Allocated);
+    StartStunKeepAliveTimer(pInst);
     break;
   }
 

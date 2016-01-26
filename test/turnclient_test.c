@@ -2037,3 +2037,25 @@ CTEST(turnclient, recievepacket_un_bound)
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
+
+
+CTEST(turnclient, keepalive)
+{
+  int ctx;
+  ctx = GotoAllocatedState(12);
+  StunMessage message;
+  /* Do we send keepalives? */
+  for (int i = 0; i < 500; i++)
+  {
+    TurnClient_HandleTick(pInst);
+  }
+  ASSERT_TRUE( stunlib_DecodeMessage(latestBuf,
+                                     latestBufLen,
+                                     &message,
+                                     NULL,
+                                     NULL) );
+  ASSERT_TRUE( stunlib_isIndication(&message) );
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
