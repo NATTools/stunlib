@@ -777,7 +777,7 @@ TurnResultToStr(TurnResult_T res)
   case TurnResult_MalformedRespWaitAlloc:
     return "TurnResult_MalformedRespWaitAlloc";
   default: return
-        "unknown turnresult ??";
+      "unknown turnresult ??";
   }
 }
 
@@ -2849,7 +2849,6 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
 {
   uint8_t* payload            = buf + offset;
   uint32_t turnSendIndHdrSize = TURN_SEND_IND_HDR_SIZE;
-
   /* insert TURN channel number + Len  before payload  */
   if (pInst->channelBound)
   {
@@ -2888,6 +2887,7 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
   {
     if (offset >= turnSendIndHdrSize)
     {
+
       /* overwrite offset data with turn header */
       dataLen =
         stunlib_EncodeSendIndication( (uint8_t*)(payload - turnSendIndHdrSize),
@@ -2900,12 +2900,19 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
     else
     {
       /* shift buffer to make room for turn header */
-      memmove(buf + turnSendIndHdrSize, buf, dataLen);
-      dataLen = stunlib_EncodeSendIndication( (unsigned char*)buf,
-                                              NULL,
-                                              bufSize,
-                                              dataLen,
-                                              peerAddr );
+      if (bufSize > dataLen + turnSendIndHdrSize)
+      {
+        memmove(buf + turnSendIndHdrSize, buf, dataLen);
+        dataLen = stunlib_EncodeSendIndication( (unsigned char*)buf,
+                                                NULL,
+                                                bufSize,
+                                                dataLen,
+                                                peerAddr );
+      }
+      else
+      {
+        dataLen = 0;
+      }
     }
   }
 

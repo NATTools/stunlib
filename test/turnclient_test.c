@@ -1420,9 +1420,6 @@ CTEST(turnclient, sendpacket_un_bound)
                                      (struct sockaddr*)&peerIp,
                                      true) );
 
-  /* printf("Buf: (%s)\n", (char*)latestBuf + 36); */
-  /* printf("Buf: (%s)\n", data); */
-
   ASSERT_TRUE(strcmp( (char*)latestBuf + 36, data ) == 0);
 
   TurnClient_Deallocate(pInst);
@@ -1459,10 +1456,42 @@ CTEST(turnclient, sendpacket_un_bound_no_offset)
                                      (struct sockaddr*)&peerIp,
                                      true) );
 
-  /* printf("Buf: (%s)\n", (char*)latestBuf + 36); */
-  /* printf("Buf: (%s)\n", data); */
-
   ASSERT_TRUE(strcmp( (char*)latestBuf + 36, data ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, sendpacket_un_bound_small_buffer)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[30];
+  int           offset = 0;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  memcpy(buf + offset, data, sizeof data);
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_FALSE(stats.channelBound);
+
+  ASSERT_FALSE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof data,
+                                     offset,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
