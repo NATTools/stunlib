@@ -2947,7 +2947,6 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
     {
       return false;
     }
-
     stunlib_decodeTurnChannelNumber(&channelNumber,
                                     &decodedLength,
                                     media);
@@ -2957,7 +2956,6 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
     {
       return false;
     }
-
     *length = decodedLength;
     memmove(media, media + 4, *length);
 
@@ -2969,6 +2967,7 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
                 sizeof (pInst->channelBindInfo.peerTrnspAddr) );
       }
     }
+    return true;
   }
   else if ( stunlib_isStunMsg(media, (uint16_t)*length) )
   {
@@ -2977,7 +2976,6 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
     {
       return false;
     }
-
     switch (stunMsg.msgHdr.msgType)
     {
     case STUN_MSG_DataIndicationMsg:
@@ -3004,7 +3002,7 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
                                       stunMsg.xorPeerAddress[0].addr.v6.port) );
         }
       }
-      return false;
+      return true;
 
     /* Turn Reponses/Turn Error responses */
     case STUN_MSG_AllocateResponseMsg:
