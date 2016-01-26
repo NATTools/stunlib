@@ -2059,3 +2059,27 @@ CTEST(turnclient, keepalive)
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
+
+CTEST(turnclient, keepalive_IPv6)
+{
+  int ctx;
+  ctx = GotoAllocatedState_IPv6(12);
+  StunMessage message;
+  /* Do we send keepalives? */
+  for (int i = 0; i < 500; i++)
+  {
+    TurnClient_HandleTick(pInst);
+  }
+  ASSERT_TRUE( stunlib_DecodeMessage(latestBuf,
+                                     latestBufLen,
+                                     &message,
+                                     NULL,
+                                     NULL) );
+
+  ASSERT_TRUE( stunlib_isIndication(&message) );
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                               (struct sockaddr*)&turnServerAddr ) );
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
