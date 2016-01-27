@@ -1,5 +1,9 @@
 [![Build Status](https://travis-ci.org/NATTools/sockaddrutil.svg?branch=master)](https://travis-ci.org/NATTools/stunlib)
 [![Coverage Status](https://coveralls.io/repos/NATTools/stunlib/badge.svg?branch=master)](https://coveralls.io/r/NATTools/stunlib?branch=master)
+<a href="https://scan.coverity.com/projects/nattools-stunlib">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/7746/badge.svg"/>
+</a>
 
 # stunlib
 STUN and TURN implementation
