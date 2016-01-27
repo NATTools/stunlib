@@ -1091,3 +1091,37 @@ CTEST(testvector, stun_msg_len)
 {
   ASSERT_TRUE(stunlib_StunMsgLen(unknwn) == 88);
 }
+
+CTEST(testvector, encode_decode_ttl)
+{
+  StunMessage   stunMsg;
+  unsigned char stunBuf[120];
+
+  for (int ttl = 1; ttl < 20; ttl++)
+  {
+    memset( &stunMsg, 0, sizeof(StunMessage) );
+    stunMsg.msgHdr.msgType = STUN_MSG_BindRequestMsg;
+    memcpy(&stunMsg.msgHdr.id.octet,&idOctet,12);
+
+    ASSERT_TRUE( stunlib_addUserName(&stunMsg, username, '\x20') );
+    ASSERT_TRUE( stunlib_addSoftware(&stunMsg, software, '\x20') );
+    stunMsg.hasTTL  = true;
+    stunMsg.ttl.ttl = ttl;
+    ASSERT_TRUE( stunlib_encodeMessage(&stunMsg,
+                                       stunBuf,
+                                       120,
+                                       (unsigned char*)password,
+                                       strlen(password),
+                                       NULL) );
+
+    memset(&stunMsg, 0, sizeof stunMsg);
+
+    ASSERT_TRUE( stunlib_DecodeMessage(stunBuf,
+                                       120,
+                                       &stunMsg,
+                                       NULL,
+                                       NULL) );
+    ASSERT_TRUE(stunMsg.hasTTL);
+    ASSERT_TRUE(stunMsg.ttl.ttl == ttl);
+  }
+}

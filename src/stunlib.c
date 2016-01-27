@@ -1577,7 +1577,7 @@ stunDecodeTTL(StunAtrTTL*     ttl,
   read_8(pBuf, &ttl->pad_8);
   read_16(pBuf, &ttl->pad_16);
 
-  *nBufLen -= 8;
+  *nBufLen -= 4;
   return true;
 }
 
@@ -2387,17 +2387,6 @@ stunlib_DecodeMessage(const uint8_t*  buf,
       message->hasTTL = true;
       break;
 
-    case STUN_ATTR_TTLString:
-      if ( !stunDecodeStringAtr(&message->TTLString,
-                                &pCurrPtr,
-                                &restlen,
-                                sAtr.length) )
-      {
-        return false;
-      }
-      message->hasTTLString = true;
-      break;
-
     case STUN_ATTR_StreamType:
       if ( !stunDecodeStreamType(&message->streamType,
                                  &pCurrPtr,
@@ -3095,18 +3084,6 @@ stunlib_encodeMessage(StunMessage*   message,
     return 0;
   }
 
-  if ( message->hasTTLString && !stunEncodeStringAtr(&message->TTLString,
-                                                     STUN_ATTR_TTLString,
-                                                     &pCurrPtr,
-                                                     &restlen) )
-  {
-    if (stream)
-    {
-        printError(stream, "Invalid TTLString\n");
-    }
-    return 0;
-  }
-
   if ( message->hasNetworkStatusResp &&
        !stunEncodeNetworkStatus(&message->networkStatusResp,
                                 &pCurrPtr,
@@ -3308,22 +3285,6 @@ stunlib_addUserName(StunMessage* stunMsg,
   stunSetString(&stunMsg->username, userName, padChar);
   return true;
 }
-
-bool
-stunlib_addTTLString(StunMessage* stunMsg,
-                     const char*  TTLString,
-                     char         padChar)
-{
-  if (strlen(TTLString) > STUN_MSG_MAX_USERNAME_LENGTH)
-  {
-    return false;
-  }
-
-  stunMsg->hasTTLString = true;
-  stunSetString(&stunMsg->TTLString, TTLString, padChar);
-  return true;
-}
-
 
 bool
 stunlib_addRealm(StunMessage* stunMsg,

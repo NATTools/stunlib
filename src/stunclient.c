@@ -194,19 +194,8 @@ BuildStunBindReq(STUN_TRANSACTION_DATA* trans,
   /* ttl */
   if (trans->stunBindReq.ttl > 0)
   {
-    char ttlString[200];
-    char iTTL[5] = "0000\0";
     stunReqMsg->hasTTL  = true;
     stunReqMsg->ttl.ttl = trans->stunBindReq.ttl;
-
-    sprintf(iTTL, "%.4i", trans->stunBindReq.ttl);
-    ttlString[0] = '\0';
-    for (int i = 0; i < trans->stunBindReq.ttl; i++)
-    {
-      strncat(ttlString,iTTL, 4);
-    }
-
-    stunlib_addTTLString(stunReqMsg, ttlString, 'a');
   }
 
 

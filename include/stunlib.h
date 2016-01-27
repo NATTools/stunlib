@@ -97,7 +97,6 @@ extern "C" {
 
 /*STUNTrace Attributes (Experimental) */
 #define STUN_ATTR_TTL                0x8055
-#define STUN_ATTR_TTLString          0x8056
 
 /* STUN attributes (TURN extensions) */
 #define STUN_ATTR_ChannelNumber       0x000c
@@ -529,9 +528,6 @@ typedef struct
   bool       hasTTL;
   StunAtrTTL ttl;
 
-  bool          hasTTLString;
-  StunAtrString TTLString;
-
   /*After Integrity attr*/
   bool                 hasNetworkStatus;
   StunAtrNetworkStatus networkStatus;
@@ -889,11 +885,6 @@ stunlib_calculateFingerprint(const uint8_t* buf,
 bool
 stunlib_checkFingerPrint(const uint8_t* buf,
                          uint32_t       fpOffset);
-
-bool
-stunlib_addTTLString(StunMessage* stunMsg,
-                     const char*  TTLString,
-                     char         padChar);
 
 
 /* Concat  username+realm+passwd into string "<username>:<realm>:<password>"
