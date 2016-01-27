@@ -1496,13 +1496,13 @@ SendStunKeepAlive(TURN_INSTANCE_DATA* pInst)
   uint8_t   buf[STUN_MIN_PACKET_SIZE];
   encLen = stunlib_encodeStunKeepAliveReq( StunKeepAliveUsage_Ice, &transId,
                                            buf, sizeof(buf) );
-
+#if 0
   TurnPrint(pInst,
             TurnInfoCategory_Trace,
             "<TURNCLIENT:%d>  OUT-->STUNKEEPALIVE: to %s",
             pInst->id,
             pInst->turnAllocateReq.serverAddr);
-
+#endif
   pInst->turnAllocateReq.sendFunc(buf,
                                   encLen,
                                   (struct sockaddr*)&pInst->turnAllocateReq.serverAddr,
