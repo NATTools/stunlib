@@ -155,6 +155,9 @@ CTEST(stunserver, SendResp_Valid_IPv6)
 {
   bool                    useRelay = false;
   struct sockaddr_storage mappedAddr,servAddr;
+  sockaddr_reset( &servAddr);
+  sockaddr_reset( &mappedAddr);
+
   sockaddr_initFromString( (struct sockaddr*)&servAddr,
                            "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234" );
 
