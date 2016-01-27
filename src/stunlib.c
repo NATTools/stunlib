@@ -1439,7 +1439,7 @@ stunDecodeUnknownAtr(StunAtrUnknown* pUnk,
                      int             atrLen)
 {
   uint32_t padLen = calcPadLen(atrLen, 4);
-  int i;
+  int      i;
   if (*nBufLen < atrLen)
   {
     return false;
@@ -1449,8 +1449,8 @@ stunDecodeUnknownAtr(StunAtrUnknown* pUnk,
     read_16(pBuf, &pUnk->attrType[i]);
   }
   pUnk->numAttributes = i;
-  *nBufLen           -= ( atrLen + padLen );
-  *pBuf           += padLen;
+  *nBufLen           -= (atrLen + padLen);
+  *pBuf              += padLen;
   if ( i < (atrLen / 2) )
   {
     *nBufLen -= (atrLen - 2 * i);
@@ -2111,9 +2111,12 @@ stunlib_DecodeMessage(const uint8_t*  buf,
     }
     if ( !stunDecodeAttributeHead(&sAtr, &pCurrPtr, &restlen) )
     {
+      if (stream)
+      {
         printError(stream,
-                 "stunlib_DecodeMessage: Failed to parse Attribute head (%d)\n",
-                 restlen);
+                   "stunlib_DecodeMessage: Failed to parse Attribute head (%d)\n",
+                   restlen);
+      }
       return false;
     }
     if (stream)
@@ -3243,7 +3246,10 @@ stunlib_encodeMessage(StunMessage*   message,
                                    &pCurrPtr,
                                    &restlen) )
     {
-      printError(stream, "Faild to add CRC Fingerprint\n");
+      if (stream)
+      {
+        printError(stream, "Faild to add CRC Fingerprint\n");
+      }
     }
     else
     {
@@ -3253,7 +3259,7 @@ stunlib_encodeMessage(StunMessage*   message,
   }
   if (stream)
   {
-      printError(stream, "STUN_encode, messages to encode: \n");
+        printError(stream, "STUN_encode, messages to encode: \n");
     stun_printMessage(stream, message);
     printError(stream, "STUN_encode, buffer encoded: \n");
     stunlib_printBuffer(stream, (uint8_t*)buf, msglen, "STUN");

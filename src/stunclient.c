@@ -1243,8 +1243,19 @@ static void
 CancelRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans)
 {
   STUN_CLIENT_DATA* client = trans->client;
+  uint32_t max;
 
-  if ( (trans->retransmits < STUNCLIENT_MAX_RETRANSMITS)
+  if (trans->stunBindReq.stuntrace)
+  {
+    max = STUNTRACE_MAX_RETRANSMITS;
+  }
+  else
+  {
+    max = STUNCLIENT_MAX_RETRANSMITS;
+  }
+
+
+  if ( (trans->retransmits < max)
        && (stunTimeoutList[trans->retransmits] != 0) ) /* can be 0 terminated if
                                                         * using fewer
                                                         * retransmits
