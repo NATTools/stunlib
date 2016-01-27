@@ -1499,9 +1499,8 @@ SendStunKeepAlive(TURN_INSTANCE_DATA* pInst)
 
   TurnPrint(pInst,
             TurnInfoCategory_Trace,
-            "<TURNCLIENT:%d>  OUT-->STUNKEEPALIVE: Len=%i to %s",
+            "<TURNCLIENT:%d>  OUT-->STUNKEEPALIVE: to %s",
             pInst->id,
-            encLen,
             pInst->turnAllocateReq.serverAddr);
 
   pInst->turnAllocateReq.sendFunc(buf,
