@@ -284,10 +284,10 @@ CTEST(turnmessage, alternate_server_IPv4)
   /*Add Error*/
   ASSERT_TRUE( stunlib_addError(&stunMsg, "Try Alternate",
                                 STUN_ERROR_TRY_ALTERNATE, pad) );
-  stunMsg.hasMappedAddress           = true;
-  stunMsg.mappedAddress.familyType   = STUN_ADDR_IPv4Family;
-  stunMsg.mappedAddress.addr.v4.addr = mapped;
-  stunMsg.mappedAddress.addr.v4.port = 3478;
+  stunMsg.hasAlternateServer           = true;
+  stunMsg.alternateServer.familyType   = STUN_ADDR_IPv4Family;
+  stunMsg.alternateServer.addr.v4.addr = mapped;
+  stunMsg.alternateServer.addr.v4.port = 3478;
 
   ASSERT_TRUE( stunlib_encodeMessage(&stunMsg,
                                      stunBuf,
@@ -304,9 +304,9 @@ CTEST(turnmessage, alternate_server_IPv4)
                                      NULL,
                                      NULL) );
 
-  ASSERT_TRUE(stunMsg.hasMappedAddress);
-  ASSERT_TRUE(stunMsg.mappedAddress.addr.v4.addr == mapped);
-  ASSERT_TRUE(stunMsg.mappedAddress.addr.v4.port == 3478);
+  ASSERT_TRUE(stunMsg.hasAlternateServer);
+  ASSERT_TRUE(stunMsg.alternateServer.addr.v4.addr == mapped);
+  ASSERT_TRUE(stunMsg.alternateServer.addr.v4.port == 3478);
 
 }
 
@@ -330,8 +330,8 @@ CTEST(turnmessage, alternate_server_IPv6)
   /*Add Error*/
   ASSERT_TRUE( stunlib_addError(&stunMsg, "Try Alternate",
                                 STUN_ERROR_TRY_ALTERNATE, pad) );
-  stunMsg.hasMappedAddress = true;
-  stunlib_setIP6Address(&stunMsg.mappedAddress,
+  stunMsg.hasAlternateServer = true;
+  stunlib_setIP6Address(&stunMsg.alternateServer,
                         ip6Addr,
                         3478);
 
@@ -350,10 +350,10 @@ CTEST(turnmessage, alternate_server_IPv6)
                                      NULL,
                                      NULL) );
 
-  ASSERT_TRUE(stunMsg.hasMappedAddress);
-  ASSERT_TRUE(stunMsg.mappedAddress.familyType == STUN_ADDR_IPv6Family);
-  ASSERT_TRUE(stunMsg.mappedAddress.addr.v6.port == 3478);
-  ASSERT_TRUE(memcmp( stunMsg.mappedAddress.addr.v6.addr, ip6Addr,
+  ASSERT_TRUE(stunMsg.hasAlternateServer);
+  ASSERT_TRUE(stunMsg.alternateServer.familyType == STUN_ADDR_IPv6Family);
+  ASSERT_TRUE(stunMsg.alternateServer.addr.v6.port == 3478);
+  ASSERT_TRUE(memcmp( stunMsg.alternateServer.addr.v6.addr, ip6Addr,
                       sizeof(ip6Addr) ) == 0);
 
 

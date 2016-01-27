@@ -740,37 +740,44 @@ TurnResultToStr(TurnResult_T res)
 {
   switch (res)
   {
-  case TurnResult_AllocOk:                     return "TurnResult_AllocOk";
-  case TurnResult_AllocFail:                   return "TurnResult_AllocFail";
-  case TurnResult_AllocFailNoAnswer:           return
-      "TurnResult_AllocFailNoAnswer";
-  case TurnResult_AllocUnauthorised:           return
-      "TurnResult_AllocUnauthorised";
-  case TurnResult_CreatePermissionOk:          return
-      "TurnResult_CreatePermissionOk";
-  case TurnResult_CreatePermissionFail:        return
-      "TurnResult_CreatePermissionFail";
-  case TurnResult_CreatePermissionNoAnswer:    return
-      "TurnResult_CreatePermissionNoAnswer";
-  case TurnResult_CreatePermissionQuotaReached: return
-      "TurnResult_CreatePermissionQuotaReached";
-  case TurnResult_PermissionRefreshFail:       return
-      "TurnResult_PermissionRefreshFail";
-  case TurnResult_ChanBindOk:                  return "TurnResult_ChanBindOk";
-  case TurnResult_ChanBindFail:                return "TurnResult_ChanBindFail";
-  case TurnResult_ChanBindFailNoanswer:        return
-      "TurnResult_ChanBindFailNoanswer";
-  case TurnResult_RefreshFail:                 return "TurnResult_RefreshFail";
-  case TurnResult_RefreshFailNoAnswer:         return
-      "TurnResult_RefreshFailNoAnswer";
-  case TurnResult_RelayReleaseComplete:        return
-      "TurnResult_RelayReleaseComplete";
-  case TurnResult_RelayReleaseFailed:          return
-      "TurnResult_RelayReleaseFailed";
-  case TurnResult_InternalError:               return "TurnResult_InternalError";
-  case TurnResult_MalformedRespWaitAlloc:      return
-      "TurnResult_MalformedRespWaitAlloc";
-  default: return "unknown turnresult ??";
+  case TurnResult_AllocOk:
+    return "TurnResult_AllocOk";
+  case TurnResult_AllocFail:
+    return "TurnResult_AllocFail";
+  case TurnResult_AllocFailNoAnswer:
+    return "TurnResult_AllocFailNoAnswer";
+  case TurnResult_AllocUnauthorised:
+    return "TurnResult_AllocUnauthorised";
+  case TurnResult_CreatePermissionOk:
+    return "TurnResult_CreatePermissionOk";
+  case TurnResult_CreatePermissionFail:
+    return "TurnResult_CreatePermissionFail";
+  case TurnResult_CreatePermissionNoAnswer:
+    return "TurnResult_CreatePermissionNoAnswer";
+  case TurnResult_CreatePermissionQuotaReached:
+    return "TurnResult_CreatePermissionQuotaReached";
+  case TurnResult_PermissionRefreshFail:
+    return "TurnResult_PermissionRefreshFail";
+  case TurnResult_ChanBindOk:
+    return "TurnResult_ChanBindOk";
+  case TurnResult_ChanBindFail:
+    return "TurnResult_ChanBindFail";
+  case TurnResult_ChanBindFailNoanswer:
+    return "TurnResult_ChanBindFailNoanswer";
+  case TurnResult_RefreshFail:
+    return "TurnResult_RefreshFail";
+  case TurnResult_RefreshFailNoAnswer:
+    return "TurnResult_RefreshFailNoAnswer";
+  case TurnResult_RelayReleaseComplete:
+    return "TurnResult_RelayReleaseComplete";
+  case TurnResult_RelayReleaseFailed:
+    return "TurnResult_RelayReleaseFailed";
+  case TurnResult_InternalError:
+    return "TurnResult_InternalError";
+  case TurnResult_MalformedRespWaitAlloc:
+    return "TurnResult_MalformedRespWaitAlloc";
+  default: return
+      "unknown turnresult ??";
   }
 }
 
@@ -1489,14 +1496,13 @@ SendStunKeepAlive(TURN_INSTANCE_DATA* pInst)
   uint8_t   buf[STUN_MIN_PACKET_SIZE];
   encLen = stunlib_encodeStunKeepAliveReq( StunKeepAliveUsage_Ice, &transId,
                                            buf, sizeof(buf) );
-
+#if 0
   TurnPrint(pInst,
             TurnInfoCategory_Trace,
-            "<TURNCLIENT:%d>  OUT-->STUNKEEPALIVE: Len=%i to %s",
+            "<TURNCLIENT:%d>  OUT-->STUNKEEPALIVE: to %s",
             pInst->id,
-            encLen,
             pInst->turnAllocateReq.serverAddr);
-
+#endif
   pInst->turnAllocateReq.sendFunc(buf,
                                   encLen,
                                   (struct sockaddr*)&pInst->turnAllocateReq.serverAddr,
@@ -2163,6 +2169,7 @@ TurnState_WaitAllocRespNotAut(TURN_INSTANCE_DATA* pInst,
     {
       StartAllocRefreshTimer(pInst);
       SetNextState(pInst, TURN_STATE_Allocated);
+      StartStunKeepAliveTimer(pInst);
       AllocateResponseCallback(pInst);
     }
     else
@@ -2284,6 +2291,7 @@ TurnState_WaitAllocResp(TURN_INSTANCE_DATA* pInst,
     {
       StartAllocRefreshTimer(pInst);
       SetNextState(pInst, TURN_STATE_Allocated);
+      StartStunKeepAliveTimer(pInst);
       AllocateResponseCallback(pInst);
 
     }
@@ -2452,6 +2460,7 @@ TurnState_WaitAllocRefreshResp(TURN_INSTANCE_DATA* pInst,
     StopTimer(pInst, TURN_SIGNAL_TimerRetransmit);
     StartAllocRefreshTimer(pInst);
     SetNextState(pInst, TURN_STATE_Allocated);
+    StartStunKeepAliveTimer(pInst);
     break;
   }
 
@@ -2842,7 +2851,6 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
 {
   uint8_t* payload            = buf + offset;
   uint32_t turnSendIndHdrSize = TURN_SEND_IND_HDR_SIZE;
-
   /* insert TURN channel number + Len  before payload  */
   if (pInst->channelBound)
   {
@@ -2881,6 +2889,7 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
   {
     if (offset >= turnSendIndHdrSize)
     {
+
       /* overwrite offset data with turn header */
       dataLen =
         stunlib_EncodeSendIndication( (uint8_t*)(payload - turnSendIndHdrSize),
@@ -2893,12 +2902,19 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    pInst,
     else
     {
       /* shift buffer to make room for turn header */
-      memmove(buf + turnSendIndHdrSize, buf, dataLen);
-      dataLen = stunlib_EncodeSendIndication( (unsigned char*)buf,
-                                              NULL,
-                                              bufSize,
-                                              dataLen,
-                                              peerAddr );
+      if (bufSize > dataLen + turnSendIndHdrSize)
+      {
+        memmove(buf + turnSendIndHdrSize, buf, dataLen);
+        dataLen = stunlib_EncodeSendIndication( (unsigned char*)buf,
+                                                NULL,
+                                                bufSize,
+                                                dataLen,
+                                                peerAddr );
+      }
+      else
+      {
+        dataLen = 0;
+      }
     }
   }
 
@@ -2933,7 +2949,6 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
     {
       return false;
     }
-
     stunlib_decodeTurnChannelNumber(&channelNumber,
                                     &decodedLength,
                                     media);
@@ -2943,7 +2958,6 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
     {
       return false;
     }
-
     *length = decodedLength;
     memmove(media, media + 4, *length);
 
@@ -2955,6 +2969,7 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
                 sizeof (pInst->channelBindInfo.peerTrnspAddr) );
       }
     }
+    return true;
   }
   else if ( stunlib_isStunMsg(media, (uint16_t)*length) )
   {
@@ -2963,7 +2978,6 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
     {
       return false;
     }
-
     switch (stunMsg.msgHdr.msgType)
     {
     case STUN_MSG_DataIndicationMsg:
@@ -2990,7 +3004,7 @@ TurnClient_ReceivePacket(TURN_INSTANCE_DATA* pInst,
                                       stunMsg.xorPeerAddress[0].addr.v6.port) );
         }
       }
-      return false;
+      return true;
 
     /* Turn Reponses/Turn Error responses */
     case STUN_MSG_AllocateResponseMsg:

@@ -151,6 +151,51 @@ CTEST(stunserver, SendResp_Valid)
 
 }
 
+CTEST(stunserver, SendResp_Valid_IPv6)
+{
+  bool                    useRelay = false;
+  struct sockaddr_storage mappedAddr,servAddr;
+  sockaddr_reset( &servAddr);
+  sockaddr_reset( &mappedAddr);
+
+  sockaddr_initFromString( (struct sockaddr*)&servAddr,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234" );
+
+  StunClient_Alloc(&stunInstance);
+  ASSERT_FALSE( StunServer_SendConnectivityBindingResp(stunInstance,
+                                                       0,  /* sockhandle */
+                                                       LastTransId,
+                                                       "pem",
+                                                       (struct sockaddr*)&
+                                                       mappedAddr,
+                                                       (struct sockaddr*)&
+                                                       servAddr,
+                                                       NULL,
+                                                       SendRawStun,
+                                                       0,
+                                                       useRelay,
+                                                       0,  /* responseCode */
+                                                       NULL) );
+  sockaddr_initFromString( (struct sockaddr*)&mappedAddr,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234" );
+  ASSERT_TRUE( StunServer_SendConnectivityBindingResp(stunInstance,
+                                                      0,
+                                                      LastTransId,
+                                                      "pem",
+                                                      (struct sockaddr*)&
+                                                      mappedAddr,
+                                                      (struct sockaddr*)&
+                                                      servAddr,
+                                                      NULL,
+                                                      SendRawStun,
+                                                      0,
+                                                      useRelay,
+                                                      0,
+                                                      NULL) );
+
+}
+
+
 CTEST(stunserver, SendDiscussResp_Valid)
 {
   bool useRelay = false;

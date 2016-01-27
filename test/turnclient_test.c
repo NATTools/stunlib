@@ -11,28 +11,25 @@
 #define  MAX_INSTANCES  5
 #define  TEST_THREAD_CTX 1
 
-typedef  struct
-{
-  uint32_t a;
-  uint8_t  b;
-}
-AppCtx_T;
 
-static AppCtx_T AppCtx[MAX_INSTANCES];
+
 /* static TurnCallBackData_T TurnCbData[MAX_INSTANCES]; */
-
-static AppCtx_T CurrAppCtx;
 
 /* static int            TestNo; */
 /* static uint32_t StunDefaultTimeoutList[STUNCLIENT_MAX_RETRANSMITS */
 /* ] = {100, 0}; */
 static StunMsgId               LastTransId;
 static struct sockaddr_storage LastAddress;
-static bool                    runningAsIPv6;
+
+
+static bool runningAsIPv6;
 
 static const uint8_t StunCookie[] = STUN_MAGIC_COOKIE_ARRAY;
 
-TurnResult_T turnResult;
+TurnResult_T       turnResult;
+TurnCallBackData_T latestResult;
+uint8_t            latestBuf[1600];
+size_t             latestBufLen;
 
 struct sockaddr_storage turnServerAddr;
 TURN_INSTANCE_DATA*     pInst;
@@ -44,7 +41,8 @@ TurnStatusCallBack(void*               ctx,
 {
   (void) ctx;
   turnResult = retData->turnResult;
-  printf("Got TURN status callback (Result (%i)\n", retData->turnResult);
+  memcpy(&latestResult, retData, sizeof latestResult);
+  /* printf("Got TURN status callback (Result (%i)\n", retData->turnResult); */
 
 }
 
@@ -57,30 +55,31 @@ SendRawStun(const uint8_t*         buf,
 {
   (void) ctx;
   (void) len;
-  char addr_str[SOCKADDR_MAX_STRLEN];
-  /* find the transaction id  so we can use this in the simulated resp */
+/*  char addr_str[SOCKADDR_MAX_STRLEN]; */
+/* find the transaction id  so we can use this in the simulated resp */
 
 
   memcpy(&LastTransId, &buf[8], STUN_MSG_ID_SIZE);
 
   sockaddr_copy( (struct sockaddr*)&LastAddress, addr );
+  if (len < sizeof latestBuf)
+  {
+    memcpy(latestBuf, buf, len);
+  }
+  latestBufLen = len;
 
-  sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true);
+  /* sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true); */
 
-  printf("TurnClienttest sendto: '%s'\n", addr_str);
+  /* printf("TurnClienttest sendto: '%s'\n", addr_str); */
 
 }
 
 static int
-StartAllocateTransaction(int n)
+StartAllocateTransaction()
 {
-  n = 0;   /* ntot sure we need n... TODO: fixme */
-  /* struct sockaddr_storage addr; */
-
-  CurrAppCtx.a =  AppCtx[n].a = 100 + n;
-  CurrAppCtx.b =  AppCtx[n].b = 200 + n;
-
-
+  runningAsIPv6 = false;
+  sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,
+                           "158.38.48.10:3478" );
   /* kick off turn */
   return TurnClient_StartAllocateTransaction(&pInst,
                                              50,
@@ -91,9 +90,30 @@ StartAllocateTransaction(int n)
                                              "pem",
                                              "pem",
                                              0,
-                                             SendRawStun,               /* send
-                                                                         * func
-                                                                         **/
+                                             SendRawStun,
+                                             TurnStatusCallBack,
+                                             false,
+                                             0);
+
+}
+
+static int
+StartAllocateTransaction_IPv6()
+{
+  struct sockaddr_storage addr;
+  sockaddr_initFromString( (struct sockaddr*)&addr,"158.38.48.10:3478" );
+  runningAsIPv6 = true;
+  /* kick off turn */
+  return TurnClient_StartAllocateTransaction(&pInst,
+                                             50,
+                                             NULL,
+                                             "test",
+                                             NULL,
+                                             (struct sockaddr*)&addr,
+                                             "pem",
+                                             "pem",
+                                             AF_INET6,
+                                             SendRawStun,
                                              TurnStatusCallBack,
                                              false,
                                              0);
@@ -102,14 +122,10 @@ StartAllocateTransaction(int n)
 
 
 static int
-StartSSODAAllocateTransaction(int n)
+StartSSODAAllocateTransaction()
 {
-  n = 0;   /* ntot sure we need n... TODO: fixme */
-  /* struct sockaddr_storage addr; */
-
-  CurrAppCtx.a =  AppCtx[n].a = 100 + n;
-  CurrAppCtx.b =  AppCtx[n].b = 200 + n;
-
+  sockaddr_initFromString( (struct sockaddr*)&turnServerAddr,
+                           "158.38.v8.10:3478" );
 
   /* kick off turn */
   return TurnClient_StartAllocateTransaction(&pInst,
@@ -135,7 +151,8 @@ SimAllocResp(int  ctx,
              bool relay,
              bool xorMappedAddr,
              bool lifetime,
-             bool IPv6)
+             bool IPv6,
+             bool duplicate)
 {
   (void) ctx;
   StunMessage m;
@@ -198,7 +215,12 @@ SimAllocResp(int  ctx,
     m.lifetime.value = 60;
   }
 
-  TurnClient_HandleIncResp(pInst, &m, NULL);
+    TurnClient_HandleIncResp(pInst, &m, NULL);
+
+  if (duplicate)
+  {
+    TurnClient_HandleIncResp(pInst, &m, NULL);
+  }
 
 }
 
@@ -224,13 +246,12 @@ SimSSODAAllocResp(int  ctx,
     m.hasXorRelayAddressIPv6 = true;
     stunlib_setIP6Address(&m.xorRelayAddressIPv6, addr, 0x4200);
 
-
-
     m.hasXorRelayAddressIPv4           = true;
     m.xorRelayAddressIPv4.familyType   = STUN_ADDR_IPv4Family;
     m.xorRelayAddressIPv4.addr.v4.addr = 3251135384UL;    /* "193.200.99.152" */
     m.xorRelayAddressIPv4.addr.v4.port = 42000;
 
+    m.hasXorRelayAddressSSODA = true;
   }
 
   /* XOR mapped addr*/
@@ -398,15 +419,29 @@ Sim_RefreshError(int      ctx,
 static int
 GotoAllocatedState(int appCtx)
 {
-  int ctx = StartAllocateTransaction(appCtx);
+  int ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(appCtx, true, 4, 1, true, true, false);   /* 401, has
                                                                     * realm has
                                                                     * nonce */
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
   return ctx;
 }
+
+static int
+GotoAllocatedState_IPv6(int appCtx)
+{
+  int ctx = StartAllocateTransaction_IPv6();
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(appCtx, true, 4, 1, true, true, false);   /* 401, has
+                                                                    * realm has
+                                                                    * nonce */
+  TurnClient_HandleTick(pInst);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  return ctx;
+}
+
 
 
 static void
@@ -432,13 +467,13 @@ Sim_TimerRefreshPermission(int ctx)
 
 CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 {
-  StartAllocateTransaction(0);
+  StartAllocateTransaction();
 
   /* 1 Tick */
   TurnClient_HandleTick(pInst);
-  ASSERT_TRUE(turnResult == TurnResult_Empty);
-  ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastAddress,
-                                (struct sockaddr*)&turnServerAddr ) );
+  ASSERT_TRUE( turnResult == TurnResult_Empty);
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                               (struct sockaddr*)&turnServerAddr ) );
   /* 2 Tick */
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_Empty);
@@ -459,13 +494,86 @@ CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 
 }
 
+CTEST(tunrclient, resultToString)
+{
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocOk),
+                     "TurnResult_AllocOk") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocFail),
+                     "TurnResult_AllocFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocFailNoAnswer),
+                     "TurnResult_AllocFailNoAnswer") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocUnauthorised),
+                     "TurnResult_AllocUnauthorised") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_CreatePermissionOk),
+                     "TurnResult_CreatePermissionOk") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_CreatePermissionFail),
+                     "TurnResult_CreatePermissionFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_CreatePermissionNoAnswer),
+                     "TurnResult_CreatePermissionNoAnswer") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_CreatePermissionQuotaReached),
+                     "TurnResult_CreatePermissionQuotaReached") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_PermissionRefreshFail),
+                     "TurnResult_PermissionRefreshFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_ChanBindOk),
+                     "TurnResult_ChanBindOk") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_ChanBindFail),
+                     "TurnResult_ChanBindFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_ChanBindFailNoanswer),
+                     "TurnResult_ChanBindFailNoanswer") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_RefreshFail),
+                     "TurnResult_RefreshFail") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_RefreshFailNoAnswer),
+                     "TurnResult_RefreshFailNoAnswer") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_RelayReleaseComplete),
+                     "TurnResult_RelayReleaseComplete") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_RelayReleaseFailed),
+                     "TurnResult_RelayReleaseFailed") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_InternalError),
+                     "TurnResult_InternalError") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_MalformedRespWaitAlloc),
+                     "TurnResult_MalformedRespWaitAlloc") == 0);
+
+  ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_Empty),
+                     "unknown turnresult ??") == 0);
+}
 
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, true);
+  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+
+}
+
+CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk_IPv6)
+{
+  int ctx;
+  ctx = StartAllocateTransaction_IPv6();
+  TurnClient_HandleTick(pInst);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, true);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
 
   TurnClient_Deallocate(pInst);
@@ -476,11 +584,28 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
 
 CTEST(turnclient, WaitAllocRespNotAutSSODA_AllocRspOk)
 {
-  int ctx;
-  ctx = StartAllocateTransaction(5);
+  int                     ctx;
+  struct sockaddr_storage relayIPv4;
+  struct sockaddr_storage relayIPv6;
+  sockaddr_initFromString( (struct sockaddr*)&relayIPv4,
+                           "193.200.99.152:42000" );
+  sockaddr_initFromString( (struct sockaddr*)&relayIPv6,
+                           "[2001:470:dc88:2:226:18ff:fe92:6d53]:16896" );
+
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimSSODAAllocResp(ctx, true, true, true);
-  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  ASSERT_TRUE( turnResult == TurnResult_AllocOk);
+
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&latestResult.TurnResultData.
+                               AllocResp.relAddrIPv4,
+                               (struct sockaddr*)&relayIPv4 ) );
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&latestResult.TurnResultData.
+                               AllocResp.relAddrIPv6,
+                               (struct sockaddr*)&relayIPv6 ) );
+  ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&latestResult.TurnResultData.
+                                AllocResp.relAddrIPv4,
+                                (struct sockaddr*)&relayIPv6 ) );
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -491,7 +616,7 @@ CTEST(turnclient, WaitAllocRespNotAutSSODA_AllocRspOk)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
 {
   int ctx;
-  ctx = StartAllocateTransaction(11);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 3, 0, false, false, true);    /* 300, alt
                                                                   * server */
@@ -504,8 +629,41 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
   ASSERT_FALSE(turnResult == TurnResult_Empty);
 
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6);
-  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  ASSERT_TRUE( turnResult == TurnResult_AllocOk);
+
+  ASSERT_TRUE( TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                               TurnClient_getRedirectedServerAddr(pInst) ) );
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+
+}
+
+CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer_IPv6)
+{
+  int ctx;
+  ctx = StartAllocateTransaction_IPv6();
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 3, 0, false, true, true);    /* 300, alt
+                                                                 * server */
+  ASSERT_FALSE(turnResult == TurnResult_Empty);
+
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
+                                                                 * realm and
+                                                                 * nonce */
+  ASSERT_FALSE(turnResult == TurnResult_Empty);
+
+  TurnClient_HandleTick(pInst);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  ASSERT_TRUE( turnResult == TurnResult_AllocOk);
+
+  ASSERT_TRUE( TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                               TurnClient_getRedirectedServerAddr(pInst) ) );
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -518,9 +676,9 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf1)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, false, true, true, runningAsIPv6);
+  SimAllocResp(ctx, false, true, true, runningAsIPv6, false);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
   TurnClient_Deallocate(pInst);
 
@@ -531,9 +689,9 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf1)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf2)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, false, true, runningAsIPv6);
+  SimAllocResp(ctx, true, false, true, runningAsIPv6, false);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
   TurnClient_Deallocate(pInst);
 
@@ -544,9 +702,9 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf2)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf3)
 {
   int ctx;
-  ctx = StartAllocateTransaction(5);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, false, runningAsIPv6);
+  SimAllocResp(ctx, true, true, false, runningAsIPv6, false);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
   TurnClient_Deallocate(pInst);
 
@@ -557,7 +715,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf3)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok)
 {
   int ctx;
-  ctx = StartAllocateTransaction(9);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
                                                                  * realm and
@@ -565,19 +723,43 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok)
   ASSERT_FALSE(turnResult == TurnResult_Empty);
 
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                                TurnClient_getRedirectedServerAddr(pInst) ) );
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
 
+CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok_IPv6)
+{
+  int ctx;
+  ctx = StartAllocateTransaction_IPv6();
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
+                                                                 * realm and
+                                                                 * nonce */
+  ASSERT_FALSE(turnResult == TurnResult_Empty);
+
+  TurnClient_HandleTick(pInst);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                                TurnClient_getRedirectedServerAddr(pInst) ) );
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
 
 
+
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_ErrNot401)
 {
   int ctx;
-  ctx = StartAllocateTransaction(15);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 4, false, false, false);   /* 404, no
                                                                   * realm, no
@@ -585,7 +767,17 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_ErrNot401)
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
   TurnClient_Deallocate(pInst);
+}
 
+CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_ErrNot401_IPv6)
+{
+  int ctx;
+  ctx = StartAllocateTransaction_IPv6();
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 4, 4, false, runningAsIPv6, false);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
+  TurnClient_Deallocate(pInst);
 }
 
 
@@ -593,7 +785,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_ErrNot401)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf1)
 {
   int ctx;
-  ctx = StartAllocateTransaction(15);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, false, true, false);   /* 401, no
                                                                   * realm, nonce
@@ -607,7 +799,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf1)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf2)
 {
   int ctx;
-  ctx = StartAllocateTransaction(15);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, false, false);   /* 401, realm,
                                                                   * no nonce */
@@ -622,7 +814,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf2)
 CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf3)
 {
   int ctx;
-  ctx = StartAllocateTransaction(11);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 3, 0, false, false, false);    /* 300,
                                                                     * missing
@@ -638,17 +830,36 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Err_malf3)
 CTEST(turnclient, WaitAllocResp_AllocRespOk)
 {
   int ctx;
-  ctx = StartAllocateTransaction(9);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
                                                                  * realm and
                                                                  * nonce */
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+  TurnClient_free(pInst);
+
+}
+
+CTEST(turnclient, WaitAllocResp_AllocRespOk_IPv6)
+{
+  int ctx;
+  ctx = StartAllocateTransaction_IPv6();
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
+                                                                 * realm and
+                                                                 * nonce */
+  TurnClient_HandleTick(pInst);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+  TurnClient_free(pInst);
 
 }
 
@@ -656,13 +867,14 @@ CTEST(turnclient, WaitAllocResp_AllocRespOk)
 CTEST(turnclient, WaitAllocResp_SSODA_AllocRespOk)
 {
   int ctx;
-  ctx = StartSSODAAllocateTransaction(9);
+  ctx = StartSSODAAllocateTransaction();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);   /* 401, has
                                                                  * realm and
                                                                  * nonce */
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6);
+  /* SimAllocResp(ctx, true, true, true, runningAsIPv6); */
+  SimSSODAAllocResp(ctx, true, true, true);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -675,32 +887,54 @@ CTEST(turnclient, WaitAllocResp_SSODA_AllocRespOk)
 CTEST(turnclient, WaitAllocResp_AllocRespErr)
 {
   int ctx;
-  ctx = StartAllocateTransaction(9);
+  ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);      /* 401, has
-                                                                    * realm and
-                                                                    * nonce */
+  SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);
   ASSERT_FALSE(turnResult == TurnResult_Empty);
-
-
   TurnClient_HandleTick(pInst);
-  SimInitialAllocRespErr(ctx, true, 4, 4, false, false, false);    /* 404, no
-                                                                    * realm and
-                                                                    * no nonce
-                                                                    **/
-
-
+  SimInitialAllocRespErr(ctx, true, 4, 4, false, false, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocUnauthorised);
-
   TurnClient_Deallocate(pInst);
-
 }
+
+CTEST(turnclient, WaitAllocResp_AllocRespErr_IPv6)
+{
+  int ctx;
+  ctx = StartAllocateTransaction_IPv6();
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);
+  ASSERT_FALSE(turnResult == TurnResult_Empty);
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 4, 4, false, false, false);
+  ASSERT_TRUE(turnResult == TurnResult_AllocUnauthorised);
+  TurnClient_Deallocate(pInst);
+}
+
 
 
 CTEST(turnclient, WaitAllocResp_Retry)
 {
   int ctx, i;
-  ctx = StartAllocateTransaction(9);
+  ctx = StartAllocateTransaction();
+  TurnClient_HandleTick(pInst);
+  SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);      /* 401, has
+                                                                    * realm and
+                                                                    * nonce */
+  ASSERT_FALSE(turnResult == TurnResult_Empty);
+  for (i = 0; i < 100; i++)
+  {
+    TurnClient_HandleTick(pInst);
+  }
+
+  ASSERT_TRUE(turnResult == TurnResult_AllocFailNoAnswer);
+
+  TurnClient_Deallocate(pInst);
+}
+
+CTEST(turnclient, WaitAllocResp_Retry_IPv6)
+{
+  int ctx, i;
+  ctx = StartAllocateTransaction_IPv6();
   TurnClient_HandleTick(pInst);
   SimInitialAllocRespErr(ctx, true, 4, 1, true, true, false);      /* 401, has
                                                                     * realm and
@@ -734,8 +968,25 @@ CTEST(turnclient, Allocated_RefreshOk)
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
 
+CTEST(turnclient, Allocated_RefreshOk_IPv6)
+{
+  int ctx, i;
 
+  ctx = GotoAllocatedState_IPv6(9);
+
+  for (i = 0; i < 2; i++)
+  {
+    Sim_TimerRefreshAlloc(ctx);
+    TurnClient_HandleTick(pInst);
+    Sim_RefreshResp(ctx);
+  }
+  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
 
 
@@ -743,6 +994,23 @@ CTEST(turnclient, Allocated_RefreshError)
 {
   int ctx;
   ctx = GotoAllocatedState(4);
+
+  Sim_TimerRefreshAlloc(ctx);
+  TurnClient_HandleTick(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+
+  Sim_TimerRefreshAlloc(ctx);
+  TurnClient_HandleTick(pInst);
+  Sim_RefreshError(ctx, 4, 1, false, false);
+  ASSERT_TRUE(turnResult == TurnResult_RefreshFail);
+
+}
+
+CTEST(turnclient, Allocated_RefreshError_IPv6)
+{
+  int ctx;
+  ctx = GotoAllocatedState_IPv6(4);
 
   Sim_TimerRefreshAlloc(ctx);
   TurnClient_HandleTick(pInst);
@@ -778,28 +1046,89 @@ CTEST(turnclient, Allocated_StaleNonce)
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
-
 }
 
+CTEST(turnclient, Allocated_StaleNonce_IPv6)
+{
+  int ctx;
+  ctx = GotoAllocatedState_IPv6(4);
+
+  Sim_TimerRefreshAlloc(ctx);
+  TurnClient_HandleTick(pInst);
+  Sim_RefreshResp(ctx);
+
+  Sim_TimerRefreshAlloc(ctx);
+  TurnClient_HandleTick(pInst);
+  Sim_RefreshError(ctx, 4, 38, true, true);   /* stale nonce */
+
+  TurnClient_HandleTick(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
 
 CTEST(turnclient, Allocated_ChanBindReqOk)
 {
   struct sockaddr_storage peerIp;
   int                     ctx;
+  TurnStats_T             stats;
   sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
 
   ctx = GotoAllocatedState(12);
-  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+  ASSERT_TRUE( TurnClient_StartChannelBindReq(pInst, 0x4001,
+                                              (struct sockaddr*)&peerIp) );
+  ASSERT_FALSE( TurnClient_StartChannelBindReq(pInst, 0x4001,
+                                               (struct sockaddr*)&peerIp) );
   TurnClient_HandleTick(pInst);
   Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_TRUE(stats.channelBound);
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 
 }
+
+CTEST(turnclient, Allocated_ChanBindReqOk_IPv6)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234" );
+
+  ctx = GotoAllocatedState_IPv6(12);
+  ASSERT_TRUE( TurnClient_StartChannelBindReq(pInst, 0x4001,
+                                              (struct sockaddr*)&peerIp) );
+  ASSERT_FALSE( TurnClient_StartChannelBindReq(pInst, 0x4001,
+                                               (struct sockaddr*)&peerIp) );
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_TRUE(stats.channelBound);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+
+}
+
 
 
 CTEST(turnclient, Allocated_ChanBindRefresh)
@@ -826,6 +1155,31 @@ CTEST(turnclient, Allocated_ChanBindRefresh)
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
 
+CTEST(turnclient, Allocated_ChanBindRefresh_IPv6)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234" );
+
+  ctx = GotoAllocatedState_IPv6(12);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  /* verfiy callback is not called again */
+  turnResult = TurnResult_Empty;
+  Sim_TimerRefreshChannelBind(ctx);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  ASSERT_TRUE(turnResult == TurnResult_Empty);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
 
 
 CTEST(turnclient, Allocated_ChanBindErr)
@@ -835,6 +1189,25 @@ CTEST(turnclient, Allocated_ChanBindErr)
   sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
 
   ctx = GotoAllocatedState(12);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindErrorResponseMsg, 4, 4);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindFail);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, Allocated_ChanBindErr_IPv6)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234" );
+
+  ctx = GotoAllocatedState_IPv6(12);
   TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
   TurnClient_HandleTick(pInst);
   Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindErrorResponseMsg, 4, 4);
@@ -873,6 +1246,34 @@ CTEST(turnclient, Allocated_CreatePermissionReqOk)
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
 
+CTEST(turnclient, Allocated_CreatePermissionReqOk_IPv6)
+{
+  struct sockaddr_storage peerIp;
+  struct sockaddr_storage peerIp_2;
+  struct sockaddr*        p_peerIp[2];
+  int                     ctx;
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
+  sockaddr_initFromString( (struct sockaddr*)&peerIp_2,
+                           "[2a02:fe0:c410:cb31:e4d:e43f:fecb:bf6b]:1234\0" );
+  p_peerIp[0] = (struct sockaddr*)&peerIp;
+  p_peerIp[1] = (struct sockaddr*)&peerIp_2;
+
+
+  ctx = GotoAllocatedState_IPv6(12);
+  ASSERT_TRUE( TurnClient_StartCreatePermissionReq(pInst,
+                                                   2,
+                                                   (const struct sockaddr**)
+                                                   p_peerIp) );
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_CreatePermissionResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_CreatePermissionOk);
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
 
 CTEST(turnclient, Allocated_CreatePermissionRefresh)
 {
@@ -907,9 +1308,40 @@ CTEST(turnclient, Allocated_CreatePermissionRefresh)
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
 
+CTEST(turnclient, Allocated_CreatePermissionRefresh_IPv6)
+{
+  struct sockaddr_storage peerIp;
+  struct sockaddr_storage peerIp_2;
+  struct sockaddr*        p_peerIp[2];
+  int                     ctx;
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
+  sockaddr_initFromString( (struct sockaddr*)&peerIp_2,
+                           "[2a02:fe0:c410:cb31:e4d:e43f:fecb:bf6b]:1234\0" );
+  p_peerIp[0] = (struct sockaddr*)&peerIp;
+  p_peerIp[1] = (struct sockaddr*)&peerIp_2;
 
 
+  ctx = GotoAllocatedState_IPv6(12);
+  TurnClient_StartCreatePermissionReq(pInst,
+                                      2,
+                                      (const struct sockaddr**)p_peerIp);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_CreatePermissionResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_CreatePermissionOk);
 
+  /* verfiy callback is not called again */
+  turnResult = TurnResult_Empty;
+  Sim_TimerRefreshPermission(ctx);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_CreatePermissionResponseMsg, 0, 0);
+  ASSERT_TRUE(turnResult == TurnResult_Empty);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
 
 CTEST(turnclient, Allocated_CreatePermissionErr)
 {
@@ -939,6 +1371,37 @@ CTEST(turnclient, Allocated_CreatePermissionErr)
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
+
+CTEST(turnclient, Allocated_CreatePermissionErr_IPv6)
+{
+  struct sockaddr_storage peerIp;
+  struct sockaddr_storage peerIp_2;
+  struct sockaddr*        p_peerIp[2];
+  int                     ctx;
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
+  sockaddr_initFromString( (struct sockaddr*)&peerIp_2,
+                           "[2a02:fe0:c410:cb31:e4d:e43f:fecb:bf6b]:1234\0" );
+  p_peerIp[0] = (struct sockaddr*)&peerIp;
+  p_peerIp[1] = (struct sockaddr*)&peerIp_2;
+
+  ctx = GotoAllocatedState_IPv6(12);
+  TurnClient_StartCreatePermissionReq(pInst,
+                                      2,
+                                      (const struct sockaddr**)p_peerIp);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx,
+                               STUN_MSG_CreatePermissionErrorResponseMsg,
+                               4,
+                               4);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_PermissionRefreshFail);
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
 
 
 CTEST(turnclient, Allocated_CreatePermissionReqAndChannelBind)
@@ -974,6 +1437,42 @@ CTEST(turnclient, Allocated_CreatePermissionReqAndChannelBind)
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
 
+CTEST(turnclient, Allocated_CreatePermissionReqAndChannelBind_IPv6)
+{
+  struct sockaddr_storage peerIp;
+  struct sockaddr_storage peerIp_2;
+  struct sockaddr*        p_peerIp[2];
+  int                     ctx;
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
+  sockaddr_initFromString( (struct sockaddr*)&peerIp_2,
+                           "[2a02:fe0:c410:cb31:e4d:e43f:fecb:bf6b]:1234\0" );
+  p_peerIp[0] = (struct sockaddr*)&peerIp;
+  p_peerIp[1] = (struct sockaddr*)&peerIp_2;
+
+
+
+  ctx = GotoAllocatedState_IPv6(12);
+  TurnClient_StartCreatePermissionReq(pInst,
+                                      2,
+                                      (const struct sockaddr**)p_peerIp);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_CreatePermissionResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_CreatePermissionOk);
+
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
 
 CTEST(turnclient, Allocated_CreatePermissionErrorAndChannelBind)
 {
@@ -993,6 +1492,44 @@ CTEST(turnclient, Allocated_CreatePermissionErrorAndChannelBind)
                                       sizeof(peerIp) / sizeof(peerIp[0]),
                                       (const struct sockaddr**)p_peerIp);
   TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp[0]);
+
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx,
+                               STUN_MSG_CreatePermissionErrorResponseMsg,
+                               4,
+                               4);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_PermissionRefreshFail);
+
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, Allocated_CreatePermissionErrorAndChannelBind_IPv6)
+{
+  struct sockaddr_storage peerIp;
+  struct sockaddr_storage peerIp_2;
+  struct sockaddr*        p_peerIp[2];
+  int                     ctx;
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
+  sockaddr_initFromString( (struct sockaddr*)&peerIp_2,
+                           "[2a02:fe0:c410:cb31:e4d:e43f:fecb:bf6b]:1234\0" );
+  p_peerIp[0] = (struct sockaddr*)&peerIp;
+  p_peerIp[1] = (struct sockaddr*)&peerIp_2;
+
+
+  ctx = GotoAllocatedState_IPv6(12);
+  TurnClient_StartCreatePermissionReq(pInst,
+                                      2,
+                                      (const struct sockaddr**)p_peerIp);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
 
   TurnClient_HandleTick(pInst);
   Sim_ChanBindOrPermissionResp(ctx,
@@ -1147,7 +1684,6 @@ CTEST(turnclient, isTurnChan)
 }
 
 
-
 CTEST(turnclient, GetErrorReason)
 {
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(3, 0),"Try Alternate") );
@@ -1155,26 +1691,489 @@ CTEST(turnclient, GetErrorReason)
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 1),"Unauthorized") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 20),"Unknown Attribute") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 30),"Stale Credentials") );
-  ASSERT_TRUE( 0 ==
-               strcmp(stunlib_getErrorReason(4,
-                                             31),"Integrity Check Failure") );
+  ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 31),
+                           "Integrity Check Failure") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 32),"Missing Username") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 37),"No Binding") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 38),"Stale Nonce") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 41),"Wrong Username") );
-  ASSERT_TRUE( 0 ==
-               strcmp(stunlib_getErrorReason(4,
-                                             42),
-                      "Unsupported Transport Protocol") );
+  ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 42),
+                           "Unsupported Transport Protocol") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(5, 00),"Server Error") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(6, 00),"Global Failure") );
-  ASSERT_TRUE( 0 ==
-               strcmp(stunlib_getErrorReason(4,
-                                             86),"Allocation Quota Reached") );
-  ASSERT_TRUE( 0 ==
-               strcmp(stunlib_getErrorReason(5, 8),"Insufficient Capacity") );
+  ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 86),
+                           "Allocation Quota Reached") );
+  ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(5, 8),
+                           "Insufficient Capacity") );
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(4, 87),"Role Conflict") );
 
   ASSERT_TRUE( 0 == strcmp(stunlib_getErrorReason(2, 43),"???") );
+}
 
+CTEST(turnclient, sendpacket_bound)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[] =
+    "123456789abcdef123456789Some data to be sendt. Here and there.\0";
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE( stats.Retransmits == 0);
+  ASSERT_TRUE( stats.Failures == 0);
+  ASSERT_TRUE( stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof buf - 24,
+                                     24,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf + 4, (char*)buf + 24 ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, sendpacket_bound_no_offset)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[300];
+  int           offset = 0;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  memcpy(buf + offset, data, sizeof data);
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE( stats.Retransmits == 0);
+  ASSERT_TRUE( stats.Failures == 0);
+  ASSERT_TRUE( stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof data,
+                                     offset,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf + TURN_CHANNEL_DATA_HDR_SIZE,
+                      data ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+
+CTEST(turnclient, sendpacket_un_bound)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[300];
+  int           offset = 56;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  memcpy(buf + offset, data, sizeof data);
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_FALSE(stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof data,
+                                     offset,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf + 36, data ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, sendpacket_un_bound_no_offset)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[300];
+  int           offset = 0;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  memcpy(buf + offset, data, sizeof data);
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_FALSE(stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof data,
+                                     offset,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf + 36, data ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, sendpacket_un_bound_small_buffer)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[30];
+  int           offset = 0;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  memcpy(buf + offset, data, sizeof data);
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_FALSE( stats.channelBound);
+
+  ASSERT_FALSE( TurnClient_SendPacket(pInst,
+                                      buf,
+                                      sizeof buf,
+                                      sizeof data,
+                                      offset,
+                                      (struct sockaddr*)&peerIp,
+                                      true) );
+
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+
+CTEST(turnclient,recievepacket_bound)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[] =
+    "123456789abcdef123456789Some data to be sendt. Here and there.\0";
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&peerIp);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE( stats.Retransmits == 0);
+  ASSERT_TRUE( stats.Failures == 0);
+  ASSERT_TRUE( stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof buf - 24,
+                                     24,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
+  ASSERT_TRUE( TurnClient_ReceivePacket(pInst,
+                                        latestBuf,
+                                        &latestBufLen,
+                                        (struct sockaddr*)&peerIp,
+                                        sizeof peerIp,
+                                        0) );
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf, (char*)buf + 24 ) == 0);
+
+  /* Can we recieve it as well? */
+
+
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient,recievepacket_bound_IPv6)
+{
+  struct sockaddr_storage addr;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[] =
+    "123456789abcdef123456789Some data to be sendt. Here and there.\0";
+    sockaddr_initFromString( (struct sockaddr*)&addr,
+                             "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
+
+
+  ctx = GotoAllocatedState(12);
+  TurnClient_StartChannelBindReq(pInst, 0x4001, (struct sockaddr*)&addr);
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_TRUE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE( stats.Retransmits == 0);
+  ASSERT_TRUE( stats.Failures == 0);
+  ASSERT_TRUE( stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof buf - 24,
+                                     24,
+                                     (struct sockaddr*)&addr,
+                                     true) );
+
+  ASSERT_TRUE( TurnClient_ReceivePacket(pInst,
+                                        latestBuf,
+                                        &latestBufLen,
+                                        (struct sockaddr*)&addr,
+                                        sizeof addr,
+                                        0) );
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf, (char*)buf + 24 ) == 0);
+
+  /* Can we recieve it as well? */
+
+
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, recievepacket_un_bound_error)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[300];
+  int           offset = 56;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  memcpy(buf + offset, data, sizeof data);
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_FALSE(stats.channelBound);
+
+  ASSERT_TRUE( TurnClient_SendPacket(pInst,
+                                     buf,
+                                     sizeof buf,
+                                     sizeof data,
+                                     offset,
+                                     (struct sockaddr*)&peerIp,
+                                     true) );
+
+  ASSERT_FALSE( TurnClient_ReceivePacket(pInst,
+                                         latestBuf,
+                                         &latestBufLen,
+                                         (struct sockaddr*)&peerIp,
+                                         sizeof peerIp,
+                                         0) );
+
+  ASSERT_TRUE(strcmp( (char*)latestBuf + 36, data ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+
+CTEST(turnclient, recievepacket_un_bound)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[300];
+  int           offset = 56;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  size_t        len;
+  memcpy(buf + offset, data, sizeof data);
+
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_FALSE(stats.channelBound);
+
+  len = stunlib_EncodeDataIndication(buf,
+                                     (unsigned char*)data,
+                                     sizeof buf,
+                                     sizeof data,
+                                     (struct sockaddr*)&peerIp);
+  ASSERT_TRUE(len == 76);
+
+
+
+  ASSERT_TRUE( TurnClient_ReceivePacket(pInst,
+                                        buf,
+                                        &len,
+                                        (struct sockaddr*)&peerIp,
+                                        sizeof peerIp,
+                                        0) );
+
+  ASSERT_TRUE(strcmp( (char*)buf, data ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, recievepacket_un_bound_IPv6)
+{
+  struct sockaddr_storage addr;
+  int                     ctx;
+  TurnStats_T             stats;
+
+  unsigned char buf[300];
+  int           offset = 56;
+  char          data[] = "Some data to be sendt. Here and there.\0";
+  size_t        len;
+  memcpy(buf + offset, data, sizeof data);
+  sockaddr_initFromString( (struct sockaddr*)&addr,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
+
+  ctx = GotoAllocatedState_IPv6(12);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_FALSE(stats.channelBound);
+  len = stunlib_EncodeDataIndication(buf,
+                                     (unsigned char*)data,
+                                     sizeof buf,
+                                     sizeof data,
+                                     (struct sockaddr*)&addr);
+  ASSERT_TRUE(len == 88);
+
+  ASSERT_TRUE( TurnClient_ReceivePacket(pInst,
+                                        buf,
+                                        &len,
+                                        (struct sockaddr*)&addr,
+                                        sizeof addr,
+                                        0) );
+
+  ASSERT_TRUE(strcmp( (char*)buf, data ) == 0);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+
+CTEST(turnclient, keepalive)
+{
+  int ctx;
+  ctx = GotoAllocatedState(12);
+  StunMessage message;
+  /* Do we send keepalives? */
+  for (int i = 0; i < 500; i++)
+  {
+    TurnClient_HandleTick(pInst);
+  }
+  ASSERT_TRUE( stunlib_DecodeMessage(latestBuf,
+                                     latestBufLen,
+                                     &message,
+                                     NULL,
+                                     NULL) );
+  ASSERT_TRUE( stunlib_isIndication(&message) );
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, keepalive_IPv6)
+{
+  int ctx;
+  ctx = GotoAllocatedState_IPv6(12);
+  StunMessage message;
+  /* Do we send keepalives? */
+  for (int i = 0; i < 500; i++)
+  {
+    TurnClient_HandleTick(pInst);
+  }
+  ASSERT_TRUE( stunlib_DecodeMessage(latestBuf,
+                                     latestBufLen,
+                                     &message,
+                                     NULL,
+                                     NULL) );
+
+  ASSERT_TRUE( stunlib_isIndication(&message) );
+  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastAddress,
+                               (struct sockaddr*)&turnServerAddr ) );
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
