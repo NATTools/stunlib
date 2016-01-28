@@ -152,13 +152,21 @@ SimAllocResp(int  ctx,
              bool xorMappedAddr,
              bool lifetime,
              bool IPv6,
-             bool duplicate)
+             bool duplicate,
+             bool wrongTransId)
 {
   (void) ctx;
   StunMessage m;
   memset( &m, 0, sizeof(m) );
-  memcpy( &m.msgHdr.id,     &LastTransId, STUN_MSG_ID_SIZE);
-  memcpy( &m.msgHdr.cookie, StunCookie,   sizeof(m.msgHdr.cookie) );
+  if (wrongTransId)
+  {
+    memcpy(&m.msgHdr.id, &LastTransId + 8, STUN_MSG_ID_SIZE);
+  }
+  else
+  {
+    memcpy( &m.msgHdr.id,     &LastTransId, STUN_MSG_ID_SIZE);
+  }
+    memcpy( &m.msgHdr.cookie, StunCookie,   sizeof(m.msgHdr.cookie) );
   m.msgHdr.msgType = STUN_MSG_AllocateResponseMsg;
 
   /* relay */
@@ -425,7 +433,7 @@ GotoAllocatedState(int appCtx)
                                                                     * realm has
                                                                     * nonce */
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false, false);
   return ctx;
 }
 
@@ -438,7 +446,7 @@ GotoAllocatedState_IPv6(int appCtx)
                                                                     * realm has
                                                                     * nonce */
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false, false);
   return ctx;
 }
 
@@ -577,8 +585,23 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
   int ctx;
   ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, true);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, true, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+
+}
+
+CTEST(turnclient, WaitAllocRespNotAut_AllocRspDuplicate)
+{
+  int ctx;
+  ctx = StartAllocateTransaction();
+  TurnClient_HandleTick(pInst);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, true, true);
+  ASSERT_FALSE(turnResult == TurnResult_AllocOk);
   ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
 
   TurnClient_Deallocate(pInst);
@@ -592,7 +615,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk_IPv6)
   int ctx;
   ctx = StartAllocateTransaction_IPv6();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, true);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, true, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
 
@@ -649,7 +672,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer)
   ASSERT_FALSE(turnResult == TurnResult_Empty);
 
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false, false);
   ASSERT_TRUE( turnResult == TurnResult_AllocOk);
 
   ASSERT_TRUE( TurnClient_hasBeenRedirected(pInst) );
@@ -678,7 +701,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_AltServer_IPv6)
   ASSERT_FALSE(turnResult == TurnResult_Empty);
 
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false, false);
   ASSERT_TRUE( turnResult == TurnResult_AllocOk);
 
   ASSERT_TRUE( TurnClient_hasBeenRedirected(pInst) );
@@ -698,7 +721,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf1)
   int ctx;
   ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, false, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, false, true, true, runningAsIPv6, false, false);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
   TurnClient_Deallocate(pInst);
 
@@ -711,7 +734,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf2)
   int ctx;
   ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, false, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, false, true, runningAsIPv6, false, false);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
   TurnClient_Deallocate(pInst);
 
@@ -724,7 +747,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRsp_Malf3)
   int ctx;
   ctx = StartAllocateTransaction();
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, false, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, false, runningAsIPv6, false, false);
   ASSERT_TRUE(turnResult == TurnResult_MalformedRespWaitAlloc);
   TurnClient_Deallocate(pInst);
 
@@ -743,7 +766,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok)
   ASSERT_FALSE(turnResult == TurnResult_Empty);
 
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
   ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastAddress,
@@ -764,7 +787,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspErr_Ok_IPv6)
   ASSERT_FALSE(turnResult == TurnResult_Empty);
 
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
   ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastAddress,
@@ -856,7 +879,7 @@ CTEST(turnclient, WaitAllocResp_AllocRespOk)
                                                                  * realm and
                                                                  * nonce */
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -874,7 +897,7 @@ CTEST(turnclient, WaitAllocResp_AllocRespOk_IPv6)
                                                                  * realm and
                                                                  * nonce */
   TurnClient_HandleTick(pInst);
-  SimAllocResp(ctx, true, true, true, runningAsIPv6, false);
+  SimAllocResp(ctx, true, true, true, runningAsIPv6, false, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -1157,7 +1180,7 @@ CTEST(turnclient, Allocated_ChanBindReq_fail_num)
 
   ctx = GotoAllocatedState(12);
   ASSERT_FALSE( TurnClient_StartChannelBindReq(pInst, 0x3001,
-                                              (struct sockaddr*)&peerIp) );
+                                               (struct sockaddr*)&peerIp) );
 
   TurnClient_HandleTick(pInst);
   Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
@@ -1177,7 +1200,7 @@ CTEST(turnclient, Allocated_ChanBindReq_fail_ip)
 
   ctx = GotoAllocatedState(12);
   ASSERT_FALSE( TurnClient_StartChannelBindReq(pInst, 0x4001,
-                                              (struct sockaddr*)NULL) );
+                                               (struct sockaddr*)NULL) );
 
   TurnClient_HandleTick(pInst);
   Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
@@ -1349,8 +1372,10 @@ CTEST(turnclient, Allocated_CreatePermissionReq_no_IP)
 
   ctx = GotoAllocatedState(12);
   ASSERT_FALSE( TurnClient_StartCreatePermissionReq(pInst,
-                                      sizeof(peerIp) / sizeof(peerIp[0]),
-                                      (const struct sockaddr**)p_peerIp) );
+                                                    sizeof(peerIp) /
+                                                    sizeof(peerIp[0]),
+                                                    (const struct sockaddr**)
+                                                    p_peerIp) );
 }
 
 CTEST(turnclient, Allocated_CreatePermissionRefresh)
