@@ -497,19 +497,19 @@ CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 
 CTEST(turnclient, startAllocation_NULL)
 {
-  ASSERT_FALSE (TurnClient_StartAllocateTransaction(NULL,
-                                             50,
-                                             NULL,
-                                             "test",
-                                             NULL,
-                                             NULL,
-                                             "pem",
-                                             "pem",
-                                             AF_INET6,
-                                             SendRawStun,
-                                             TurnStatusCallBack,
-                                             false,
-                                             0));
+  ASSERT_FALSE( TurnClient_StartAllocateTransaction(NULL,
+                                                    50,
+                                                    NULL,
+                                                    "test",
+                                                    NULL,
+                                                    NULL,
+                                                    "pem",
+                                                    "pem",
+                                                    AF_INET6,
+                                                    SendRawStun,
+                                                    TurnStatusCallBack,
+                                                    false,
+                                                    0) );
 
 }
 CTEST(tunrclient, resultToString)
@@ -1147,7 +1147,45 @@ CTEST(turnclient, Allocated_ChanBindReqOk_IPv6)
 
 }
 
+CTEST(turnclient, Allocated_ChanBindReq_fail_num)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
 
+  ctx = GotoAllocatedState(12);
+  ASSERT_FALSE( TurnClient_StartChannelBindReq(pInst, 0x3001,
+                                              (struct sockaddr*)&peerIp) );
+
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_FALSE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
+
+CTEST(turnclient, Allocated_ChanBindReq_fail_ip)
+{
+  struct sockaddr_storage peerIp;
+  int                     ctx;
+  sockaddr_initFromString( (struct sockaddr*)&peerIp,"192.168.5.22:1234" );
+
+  ctx = GotoAllocatedState(12);
+  ASSERT_FALSE( TurnClient_StartChannelBindReq(pInst, 0x4001,
+                                              (struct sockaddr*)NULL) );
+
+  TurnClient_HandleTick(pInst);
+  Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_ChannelBindResponseMsg, 0, 0);
+  TurnClient_HandleTick(pInst);
+  ASSERT_FALSE(turnResult == TurnResult_ChanBindOk);
+
+  TurnClient_Deallocate(pInst);
+  Sim_RefreshResp(ctx);
+  ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
+}
 
 CTEST(turnclient, Allocated_ChanBindRefresh)
 {
@@ -1976,8 +2014,8 @@ CTEST(turnclient,recievepacket_bound_IPv6)
 
   unsigned char buf[] =
     "123456789abcdef123456789Some data to be sendt. Here and there.\0";
-    sockaddr_initFromString( (struct sockaddr*)&addr,
-                             "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
+  sockaddr_initFromString( (struct sockaddr*)&addr,
+                           "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234\0" );
 
 
   ctx = GotoAllocatedState(12);
@@ -2134,7 +2172,7 @@ CTEST(turnclient, recievepacket_un_bound_IPv6)
                                      sizeof buf,
                                      sizeof data,
                                      (struct sockaddr*)&addr);
-  ASSERT_TRUE(len == 88);
+  ASSERT_TRUE( len == 88);
 
   ASSERT_TRUE( TurnClient_ReceivePacket(pInst,
                                         buf,
