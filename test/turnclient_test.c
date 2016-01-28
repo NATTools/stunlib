@@ -494,6 +494,24 @@ CTEST(turnclient, WaitAllocRespNotAut_Timeout)
 
 }
 
+
+CTEST(turnclient, startAllocation_NULL)
+{
+  ASSERT_FALSE (TurnClient_StartAllocateTransaction(NULL,
+                                             50,
+                                             NULL,
+                                             "test",
+                                             NULL,
+                                             NULL,
+                                             "pem",
+                                             "pem",
+                                             AF_INET6,
+                                             SendRawStun,
+                                             TurnStatusCallBack,
+                                             false,
+                                             0));
+
+}
 CTEST(tunrclient, resultToString)
 {
   ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocOk),
