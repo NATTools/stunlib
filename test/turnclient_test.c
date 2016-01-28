@@ -1360,7 +1360,6 @@ CTEST(turnclient, Allocated_CreatePermissionReq_no_IP)
 {
   struct sockaddr_storage  peerIp[6];
   struct sockaddr_storage* p_peerIp[6];
-  int                      ctx;
   uint32_t                 i;
 
   for (i = 0; i < sizeof(peerIp) / sizeof(peerIp[0]); i++)
@@ -1370,7 +1369,7 @@ CTEST(turnclient, Allocated_CreatePermissionReq_no_IP)
   }
   p_peerIp[4] = NULL;
 
-  ctx = GotoAllocatedState(12);
+  GotoAllocatedState(12);
   ASSERT_FALSE( TurnClient_StartCreatePermissionReq(pInst,
                                                     sizeof(peerIp) /
                                                     sizeof(peerIp[0]),
