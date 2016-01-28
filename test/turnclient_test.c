@@ -520,6 +520,44 @@ CTEST(turnclient, startAllocation_NULL)
                                                     0) );
 
 }
+
+
+CTEST(turnclient, startAllocation_even)
+{
+  ASSERT_TRUE( TurnClient_StartAllocateTransaction(&pInst,
+                                                    50,
+                                                    NULL,
+                                                    "test",
+                                                    NULL,
+                                                    NULL,
+                                                    "pem",
+                                                    "pem",
+                                                    AF_INET6,
+                                                    SendRawStun,
+                                                    TurnStatusCallBack,
+                                                    true,
+                                                    0) );
+
+}
+
+CTEST(turnclient, startAllocation_odd)
+{
+  ASSERT_TRUE( TurnClient_StartAllocateTransaction(&pInst,
+                                                    50,
+                                                    NULL,
+                                                    "test",
+                                                    NULL,
+                                                    NULL,
+                                                    "pem",
+                                                    "pem",
+                                                    AF_INET6,
+                                                    SendRawStun,
+                                                    TurnStatusCallBack,
+                                                    true,
+                                                    45678) );
+
+}
+
 CTEST(tunrclient, resultToString)
 {
   ASSERT_TRUE(strcmp(TurnResultToStr(TurnResult_AllocOk),
@@ -588,6 +626,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
   SimAllocResp(ctx, true, true, true, runningAsIPv6, true, false);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
   ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
+  ASSERT_FALSE( TurnClient_hasBeenRedirected(NULL ) );
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -1307,6 +1346,7 @@ CTEST(turnclient, Allocated_CreatePermissionReqOk)
   struct sockaddr_storage* p_peerIp[6];
   int                      ctx;
   uint32_t                 i;
+  TurnStats_T             stats;
 
   for (i = 0; i < sizeof(peerIp) / sizeof(peerIp[0]); i++)
   {
@@ -1322,6 +1362,14 @@ CTEST(turnclient, Allocated_CreatePermissionReqOk)
   Sim_ChanBindOrPermissionResp(ctx, STUN_MSG_CreatePermissionResponseMsg, 0, 0);
   TurnClient_HandleTick(pInst);
   ASSERT_TRUE(turnResult == TurnResult_CreatePermissionOk);
+
+  TurnClientGetStats(pInst,
+                     &stats);
+  ASSERT_TRUE(stats.Retransmits == 0);
+  ASSERT_TRUE(stats.Failures == 0);
+  ASSERT_TRUE(stats.numberOfPeers == 6);
+
+
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
