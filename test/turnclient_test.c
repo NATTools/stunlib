@@ -1331,6 +1331,26 @@ CTEST(turnclient, Allocated_CreatePermissionReqOk_IPv6)
   ASSERT_TRUE(turnResult == TurnResult_RelayReleaseComplete);
 }
 
+CTEST(turnclient, Allocated_CreatePermissionReq_no_IP)
+{
+  struct sockaddr_storage  peerIp[6];
+  struct sockaddr_storage* p_peerIp[6];
+  int                      ctx;
+  uint32_t                 i;
+
+  for (i = 0; i < sizeof(peerIp) / sizeof(peerIp[0]); i++)
+  {
+    sockaddr_initFromString( (struct sockaddr*)&peerIp[i],"192.168.5.22:1234" );
+    p_peerIp[i] = &peerIp[i];
+  }
+  p_peerIp[4] = NULL;
+
+  ctx = GotoAllocatedState(12);
+  ASSERT_FALSE( TurnClient_StartCreatePermissionReq(pInst,
+                                      sizeof(peerIp) / sizeof(peerIp[0]),
+                                      (const struct sockaddr**)p_peerIp) );
+}
+
 CTEST(turnclient, Allocated_CreatePermissionRefresh)
 {
   struct sockaddr_storage  peerIp[6];
