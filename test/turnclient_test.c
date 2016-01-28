@@ -579,6 +579,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk)
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, true, true, true, runningAsIPv6, true);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
@@ -593,6 +594,7 @@ CTEST(turnclient, WaitAllocRespNotAut_AllocRspOk_IPv6)
   TurnClient_HandleTick(pInst);
   SimAllocResp(ctx, true, true, true, runningAsIPv6, true);
   ASSERT_TRUE(turnResult == TurnResult_AllocOk);
+  ASSERT_FALSE( TurnClient_hasBeenRedirected(pInst) );
 
   TurnClient_Deallocate(pInst);
   Sim_RefreshResp(ctx);
