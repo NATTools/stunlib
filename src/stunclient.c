@@ -194,19 +194,8 @@ BuildStunBindReq(STUN_TRANSACTION_DATA* trans,
   /* ttl */
   if (trans->stunBindReq.ttl > 0)
   {
-    char ttlString[200];
-    char iTTL[5] = "0000\0";
     stunReqMsg->hasTTL  = true;
     stunReqMsg->ttl.ttl = trans->stunBindReq.ttl;
-
-    sprintf(iTTL, "%.4i", trans->stunBindReq.ttl);
-    ttlString[0] = '\0';
-    for (int i = 0; i < trans->stunBindReq.ttl; i++)
-    {
-      strncat(ttlString,iTTL, 4);
-    }
-
-    stunlib_addTTLString(stunReqMsg, ttlString, 'a');
   }
 
 
@@ -1243,8 +1232,19 @@ static void
 CancelRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans)
 {
   STUN_CLIENT_DATA* client = trans->client;
+  uint32_t max;
 
-  if ( (trans->retransmits < STUNCLIENT_MAX_RETRANSMITS)
+  if (trans->stunBindReq.stuntrace)
+  {
+    max = STUNTRACE_MAX_RETRANSMITS;
+  }
+  else
+  {
+    max = STUNCLIENT_MAX_RETRANSMITS;
+  }
+
+
+  if ( (trans->retransmits < max)
        && (stunTimeoutList[trans->retransmits] != 0) ) /* can be 0 terminated if
                                                         * using fewer
                                                         * retransmits

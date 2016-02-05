@@ -1439,7 +1439,7 @@ stunDecodeUnknownAtr(StunAtrUnknown* pUnk,
                      int             atrLen)
 {
   uint32_t padLen = calcPadLen(atrLen, 4);
-  int i;
+  int      i;
   if (*nBufLen < atrLen)
   {
     return false;
@@ -1449,8 +1449,8 @@ stunDecodeUnknownAtr(StunAtrUnknown* pUnk,
     read_16(pBuf, &pUnk->attrType[i]);
   }
   pUnk->numAttributes = i;
-  *nBufLen           -= ( atrLen + padLen );
-  *pBuf           += padLen;
+  *nBufLen           -= (atrLen + padLen);
+  *pBuf              += padLen;
   if ( i < (atrLen / 2) )
   {
     *nBufLen -= (atrLen - 2 * i);
@@ -1577,7 +1577,7 @@ stunDecodeTTL(StunAtrTTL*     ttl,
   read_8(pBuf, &ttl->pad_8);
   read_16(pBuf, &ttl->pad_16);
 
-  *nBufLen -= 8;
+  *nBufLen -= 4;
   return true;
 }
 
@@ -2111,9 +2111,12 @@ stunlib_DecodeMessage(const uint8_t*  buf,
     }
     if ( !stunDecodeAttributeHead(&sAtr, &pCurrPtr, &restlen) )
     {
+      if (stream)
+      {
         printError(stream,
-                 "stunlib_DecodeMessage: Failed to parse Attribute head (%d)\n",
-                 restlen);
+                   "stunlib_DecodeMessage: Failed to parse Attribute head (%d)\n",
+                   restlen);
+      }
       return false;
     }
     if (stream)
@@ -2382,17 +2385,6 @@ stunlib_DecodeMessage(const uint8_t*  buf,
         return false;
       }
       message->hasTTL = true;
-      break;
-
-    case STUN_ATTR_TTLString:
-      if ( !stunDecodeStringAtr(&message->TTLString,
-                                &pCurrPtr,
-                                &restlen,
-                                sAtr.length) )
-      {
-        return false;
-      }
-      message->hasTTLString = true;
       break;
 
     case STUN_ATTR_StreamType:
@@ -3092,18 +3084,6 @@ stunlib_encodeMessage(StunMessage*   message,
     return 0;
   }
 
-  if ( message->hasTTLString && !stunEncodeStringAtr(&message->TTLString,
-                                                     STUN_ATTR_TTLString,
-                                                     &pCurrPtr,
-                                                     &restlen) )
-  {
-    if (stream)
-    {
-        printError(stream, "Invalid TTLString\n");
-    }
-    return 0;
-  }
-
   if ( message->hasNetworkStatusResp &&
        !stunEncodeNetworkStatus(&message->networkStatusResp,
                                 &pCurrPtr,
@@ -3243,7 +3223,10 @@ stunlib_encodeMessage(StunMessage*   message,
                                    &pCurrPtr,
                                    &restlen) )
     {
-      printError(stream, "Faild to add CRC Fingerprint\n");
+      if (stream)
+      {
+        printError(stream, "Faild to add CRC Fingerprint\n");
+      }
     }
     else
     {
@@ -3253,7 +3236,7 @@ stunlib_encodeMessage(StunMessage*   message,
   }
   if (stream)
   {
-      printError(stream, "STUN_encode, messages to encode: \n");
+        printError(stream, "STUN_encode, messages to encode: \n");
     stun_printMessage(stream, message);
     printError(stream, "STUN_encode, buffer encoded: \n");
     stunlib_printBuffer(stream, (uint8_t*)buf, msglen, "STUN");
@@ -3302,22 +3285,6 @@ stunlib_addUserName(StunMessage* stunMsg,
   stunSetString(&stunMsg->username, userName, padChar);
   return true;
 }
-
-bool
-stunlib_addTTLString(StunMessage* stunMsg,
-                     const char*  TTLString,
-                     char         padChar)
-{
-  if (strlen(TTLString) > STUN_MSG_MAX_USERNAME_LENGTH)
-  {
-    return false;
-  }
-
-  stunMsg->hasTTLString = true;
-  stunSetString(&stunMsg->TTLString, TTLString, padChar);
-  return true;
-}
-
 
 bool
 stunlib_addRealm(StunMessage* stunMsg,
