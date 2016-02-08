@@ -4,6 +4,7 @@
   <img alt="Coverity Scan Build Status"
        src="https://scan.coverity.com/projects/7746/badge.svg"/>
 </a>
+[![GitHub version](https://badge.fury.io/gh/NATTools%2Fstunlib.svg)](https://github.com/NATTools/stunlib/releases)
 
 # stunlib
 STUN and TURN implementation
@@ -22,14 +23,14 @@ against in build/dist/lib.
 
 ## Development
 
-You need to have [cmake](http://www.cmake.org/ to build.
+You need to have [cmake](http://www.cmake.org/) to build.
 Note that version 3.2 or newer is needed. (Some linux distributions are a bit slow to update, so manuall install may be needed.)
 
 ### Unit Tests
 
 Build and run the checks with
 
-    make test
+    make -C build test
 
 If tests fail it can help to run the binaries in `build/dist/test` to see where
 they fail.
@@ -49,14 +50,10 @@ remember how it was fixed)
 
 ### Coding Standard
 
-TODO: make this more formal.
+Using uncrustify to clean up code. There is a uncrustify.cfg file that describes
+the format. Run uncrustify before posting pull requests.
 
-We like to do C90/C99ish style. Will make sure the library compile on most platforms.
-
-Braces can be placed where you want them. But try to be consistent..
-
-White-spaces when committing should be avoided. (Usual rant on diffs and
-readability)
+[Semantic versioning](http://semver.org/) is used.
 
 ## Contributing
 

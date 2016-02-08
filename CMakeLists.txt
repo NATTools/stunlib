@@ -4,10 +4,16 @@
 
 ## prepare CMAKE
 cmake_minimum_required ( VERSION 3.2.0 )
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+include ( Uncrustify )
+include ( GetGitRevisionDescription )
+git_describe(VERSION --tags --dirty=-d)
 
-set ( STUNLIB_VERSION_MAJOR 0 CACHE STRING "Project major version number")
-set ( STUNLIB_VERSION_MINOR "3" CACHE STRING "Project minor version number" )
-set ( STUNLIB_VERSION_PATCH "0" CACHE STRING "Project patch version number" )
+string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" STUNLIBL_VERSION_MAJOR "${VERSION}")
+string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" STUNLIB_VERSION_MINOR "${VERSION}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" STUNLIB_VERSION_PATCH "${VERSION}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+(.*)" "\\1" STUNLIB_VERSION_SHA1 "${VERSION}")
+
 mark_as_advanced(STUNLIB_VERSION_MAJOR STUNLIB_VERSION_MINOR STUNLIB_VERSION_PATCH)
 
 set ( STUNLIB_VERSION "${STUNLIB_VERSION_MAJOR}.${STUNLIB_VERSION_MINOR}.${STUNLIB_VERSION_PATCH}" )
@@ -23,6 +29,7 @@ option ( fatal_warnings "Treat build warnings as errors" ON )
 option ( coveralls "Generate coveralls data" ON )
 option ( coveralls_send "Send data to coveralls site" OFF )
 option ( build_docs "Create docs using Doxygen" ${DOXYGEN_FOUND} )
+option ( uncrustify "Uncrustify the source code" ${UNCRUSTIFY_FOUND} )
 
 set ( dist_dir    ${CMAKE_BINARY_DIR}/dist )
 set ( prefix      ${CMAKE_INSTALL_PREFIX} )
@@ -114,9 +121,9 @@ set ( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" )
 
 include ( CPack )
 include ( CTest )
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 include ( LCov )
+
+UncrustifyTop(${uncrustify})
 
 if (build_docs)
     if(NOT DOXYGEN_FOUND)
