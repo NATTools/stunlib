@@ -63,6 +63,8 @@ typedef struct
   struct sockaddr_storage dstBaseAddr;    /* The destination seen from the
                                            * sender of the response */
   uint32_t rtt;                           /* Rtt in microseconds */
+  uint32_t reqTransCnt;
+  uint32_t respTransCnt;
   uint32_t retransmits;
   uint32_t ICMPtype;
   uint32_t ttl;

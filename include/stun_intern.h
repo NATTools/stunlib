@@ -113,9 +113,14 @@ typedef struct
   int32_t  TimerRetransmit;
   uint32_t retransmits;
 
+  uint32_t reqTransCnt;
+  uint32_t respTransCnt;
+
   /* RTT Info */
   struct timeval start[STUNCLIENT_MAX_RETRANSMITS];
   struct timeval stop[STUNCLIENT_MAX_RETRANSMITS];
+
+
 
   /* icmp */
   uint32_t ICMPtype;

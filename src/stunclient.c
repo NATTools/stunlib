@@ -1333,8 +1333,6 @@ StoreBindResp(STUN_TRANSACTION_DATA* trans,
                                 resp->xorMappedAddress.addr.v6.addr,
                                 htons(resp->xorMappedAddress.addr.v6.port) );
     }
-
-    return true;
   }
   else
   {
@@ -1343,6 +1341,13 @@ StoreBindResp(STUN_TRANSACTION_DATA* trans,
               trans->inst);
     return false;
   }
+
+  if (resp->hasTransCount)
+  {
+    trans->reqTransCnt  = resp->transCount.reqCnt;
+    trans->respTransCnt = resp->transCount.respCnt;
+  }
+  return true;
 }
 
 static int
@@ -1385,6 +1390,9 @@ BindRespCallback(STUN_TRANSACTION_DATA* trans,
 
   res.rtt = getRTTvalue(trans);
   res.ttl = trans->stunBindReq.ttl;
+
+  res.respTransCnt = trans->respTransCnt;
+  res.reqTransCnt = trans->reqTransCnt;
 
   StunPrint( client->logUserData, client->Log_cb, StunInfoCategory_Info,
              "<STUNCLIENT:%02d> BindResp from src: %s",
@@ -1522,8 +1530,8 @@ StunState_WaitBindResp(STUN_TRANSACTION_DATA* trans,
   case STUN_SIGNAL_ICMPResp:
   {
     StunRespStruct* pMsgIn = (StunRespStruct*)payload;
-    trans->ICMPtype = pMsgIn->ICMPtype;
-    trans->stunBindReq.ttl      = pMsgIn->ttl;
+    trans->ICMPtype        = pMsgIn->ICMPtype;
+    trans->stunBindReq.ttl = pMsgIn->ttl;
     ICMPRespCallback(trans, (struct sockaddr*)&pMsgIn->srcAddr);
     trans->stats.ICMPReceived++;
     SetNextState(trans, STUN_STATE_Idle);

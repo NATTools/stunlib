@@ -45,6 +45,10 @@ DiscussData             discussData;
 
 char logStr[200];
 
+int lastReqCnt;
+int lastTranspRespCnt;
+int lastTranspReqCnt;
+
 CTEST_DATA(data)
 {
   int a;
@@ -58,6 +62,8 @@ StunStatusCallBack(void*               ctx,
 {
   (void)ctx;
   stunResult = retData->stunResult;
+  lastTranspRespCnt = retData->respTransCnt;
+  lastTranspReqCnt = retData->reqTransCnt;
   /* printf("Got STUN status callback\n");// (Result (%i)\n",
    * retData->stunResult); */
 }
@@ -99,6 +105,15 @@ SendRawStun(void*                  ctx,
 
   sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true);
 
+  // And then we deencode to chek if correct values are set..
+  StunMessage stunMsg;
+  stunlib_DecodeMessage(buf, len, &stunMsg, NULL,
+                                           NULL);
+  lastReqCnt = 0;
+  if(stunMsg.hasTransCount){
+    lastReqCnt = stunMsg.transCount.reqCnt;
+    //lastTranspRespCnt = stunMsg.transCount.respCnt;
+  }
   /* printf("Sendto: '%s'\n", addr_str); */
 
 }
@@ -223,7 +238,9 @@ SimBindSuccessResp(bool IPv6,
     m.xorMappedAddress.addr.v4.addr = test_addr_ipv4;
     m.xorMappedAddress.addr.v4.port = test_port_ipv4;
   }
-
+  m.hasTransCount = true;
+  m.transCount.respCnt = 2;
+  m.transCount.reqCnt = lastReqCnt;
   StunClient_HandleIncResp(stunInstance, &m, NULL);
 
 }
@@ -384,7 +401,7 @@ CTEST(stunclient, WaitBindRespNotAut_Timeout)
   {
     StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
   }
-
+  ASSERT_TRUE(lastReqCnt == 9);
   ASSERT_TRUE(stunResult == StunResult_BindFailNoAnswer);
   StunClient_free(stunInstance);
 }
@@ -401,7 +418,35 @@ CTEST(stunclient, WaitBindRespNotAut_BindSuccess)
   StunClient_HandleIncResp(NULL, NULL, NULL);
   SimBindSuccessRespWrongId(runningAsIPv6, true);
   SimBindSuccessResp(runningAsIPv6, true);
+  ASSERT_TRUE(lastReqCnt == 1);
   ASSERT_TRUE(stunResult == StunResult_BindOk);
+  StunClient_free(stunInstance);
+}
+
+CTEST(stunclient, BindReq_TranportCnt)
+{
+  StunClient_Alloc(&stunInstance);
+  sockaddr_initFromString( (struct sockaddr*)&stunServerAddr,
+                           "193.200.93.152:3478" );
+
+  StartBindTransaction(0);
+  ASSERT_TRUE(lastReqCnt == 1);
+  for (int i = 0; i < 5; i++)
+  {
+    StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
+  }
+  ASSERT_TRUE(lastReqCnt == 2);
+
+  for (int i = 0; i < 5; i++)
+  {
+    StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
+  }
+  ASSERT_TRUE(lastReqCnt == 3);
+
+  SimBindSuccessResp(runningAsIPv6, true);
+  ASSERT_TRUE(stunResult == StunResult_BindOk);
+  ASSERT_TRUE(lastTranspReqCnt == 3);
+  ASSERT_TRUE(lastTranspRespCnt == 2);
   StunClient_free(stunInstance);
 }
 
