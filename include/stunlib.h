@@ -116,6 +116,9 @@ extern "C" {
 #define STUN_ATTR_ICEControlled      0x8029
 #define STUN_ATTR_ICEControlling     0x802A
 
+/* Draft loss and RTT calculation TODO:update actual calues*/
+#define STUN_ATTR_TransCount        0x8072
+
 /** IP Addr family **/
 #define STUN_ADDR_IPv4Family         0x01
 #define STUN_ADDR_IPv6Family         0x02
@@ -364,6 +367,14 @@ StunAtrNetworkStatus;
 
 typedef struct
 {
+  uint16_t reserved;
+  uint8_t  reqCnt;
+  uint8_t  respCnt;
+}
+StunAtrTransCount;
+
+typedef struct
+{
   uint32_t first;
   uint32_t second;
   uint32_t third;
@@ -542,7 +553,8 @@ typedef struct
   bool                        hasCiscoNetFeedResp;
   StunAtrCiscoNetworkFeedback ciscoNetFeedResp;
 
-
+  bool                        hasTransCount;
+  StunAtrTransCount transCount;
 
   /* No value, only flaged */
   bool hasUseCandidate;

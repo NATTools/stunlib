@@ -48,9 +48,6 @@ char logStr[200];
 CTEST_DATA(data)
 {
   int a;
-
-
-
 };
 #define STUN_TICK_INTERVAL_MS 50
 
@@ -114,6 +111,7 @@ stundbg(void*              ctx,
   (void) category;
   (void) ctx;
   strncpy(logStr, errStr, sizeof logStr);
+  //printf("%s\n", errStr);
 }
 
 static int
@@ -360,6 +358,9 @@ CTEST(stunclient, WaitBindRespNotAut_Timeout)
 {
   ASSERT_TRUE(stunResult == StunResult_Empty);
   StunClient_Alloc(&stunInstance);
+  StunClient_RegisterLogger(stunInstance,
+                            stundbg,
+                            NULL);
   sockaddr_initFromString( (struct sockaddr*)&stunServerAddr,
                            "193.200.93.152:3478" );
 

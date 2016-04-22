@@ -74,6 +74,7 @@ typedef struct {
   DiscussData*            discussData;    /*NULL allowed if none present */
   bool                    addSoftware;
   bool                    stuntrace;
+  bool                    addTransCnt;
 } StunBindReqStruct;
 
 struct StunClientStats
@@ -102,11 +103,6 @@ typedef struct
   uint32_t          inst;
   StunBindReqStruct stunBindReq;
 
-  uint8_t stunReqMsgBuf[STUN_MAX_PACKET_SIZE];         /* encoded STUN request
-                                                        *   */
-  int stunReqMsgBufLen;                                /* of encoded STUN
-                                                        * request */
-
   STUN_USER_CREDENTIALS userCredentials;
   bool                  authenticated;
 
@@ -123,7 +119,7 @@ typedef struct
 
   /* icmp */
   uint32_t ICMPtype;
-  uint32_t ttl;
+  //uint32_t ttl;
 
   /* DISCUSS */
   bool        hasDiscuss;

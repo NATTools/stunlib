@@ -180,7 +180,7 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 STUN_SENDFUNC          sendFunc,
                                 STUNCB                 stunCbFunc,
                                 DiscussData*           discussData);
-uint32_t
+void
 StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           void*                  userCtx,
                           const struct sockaddr* serverAddr,

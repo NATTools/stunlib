@@ -20,6 +20,19 @@ static const uint8_t StunCookie[]   = STUN_MAGIC_COOKIE_ARRAY;
 const uint64_t       test_addr_ipv4 = 1009527574; /* "60.44.43.22"); */
 const uint32_t       test_port_ipv4 = 43000;
 
+
+void
+stundbg(void*              ctx,
+        StunInfoCategory_T category,
+        char*              errStr)
+{
+  (void) category;
+  (void) ctx;
+  (void) errStr;
+//  strncpy(logStr, errStr, sizeof logStr);
+//  printf("%s\n", errStr);
+}
+
 static void
 sendPacket(void*                  ctx,
            int                    sockfd,
@@ -537,8 +550,9 @@ CTEST(stuntrace, run_IPv4_Stunresp)
                            "192.168.1.34:45674" );
 
   StunClient_Alloc(&clientData);
-
-
+  StunClient_RegisterLogger(clientData,
+                            stundbg,
+                            NULL);
   int len = StunTrace_startTrace(clientData,
                                  &someData,
                                  (const struct sockaddr*)&remoteAddr,
@@ -561,22 +575,20 @@ CTEST(stuntrace, run_IPv4_Stunresp)
   m.xorMappedAddress.familyType   = STUN_ADDR_IPv4Family;
   m.xorMappedAddress.addr.v4.addr = test_addr_ipv4;
   m.xorMappedAddress.addr.v4.port = test_port_ipv4;
-
   StunClient_HandleIncResp(clientData,
                            &m,
                            NULL);
-
   /* First hop.. */
-  ASSERT_TRUE(LastTTL == 1);
+  ASSERT_TRUE(LastTTL == 40);
   sockaddr_initFromString( (struct sockaddr*)&hop1Addr,
                            "192.168.1.1:45674" );
-  StunClient_HandleICMP(clientData,
+    StunClient_HandleICMP(clientData,
                         (struct sockaddr*)&hop1Addr,
                         11);
-  ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastHopAddr,
+  ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastHopAddr,
                                (struct sockaddr*)&hop1Addr ) );
 
-  ASSERT_TRUE( LastTTL == 2);
+  ASSERT_TRUE( LastTTL == 40);
 
   sockaddr_initFromString( (struct sockaddr*)&hop2Addr,
                            "193.200.93.152:45674" );
@@ -584,6 +596,8 @@ CTEST(stuntrace, run_IPv4_Stunresp)
   StunClient_HandleICMP(clientData,
                         (struct sockaddr*)&hop2Addr,
                         3);
+
+
   ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastHopAddr,
                                (struct sockaddr*)&hop2Addr ) );
   ASSERT_TRUE( Done);
@@ -711,7 +725,7 @@ CTEST(stuntrace, run_IPv4_Stunresp_end)
                            NULL);
 
   /* First hop.. */
-  ASSERT_TRUE(LastTTL == 1);
+  ASSERT_TRUE(LastTTL == 40);
   sockaddr_initFromString( (struct sockaddr*)&hop1Addr,
                            "192.168.1.1:45674" );
   StunClient_HandleICMP(clientData,
@@ -720,7 +734,7 @@ CTEST(stuntrace, run_IPv4_Stunresp_end)
   ASSERT_TRUE( sockaddr_alike( (struct sockaddr*)&LastHopAddr,
                                (struct sockaddr*)&hop1Addr ) );
 
-  ASSERT_TRUE( LastTTL == 2);
+  ASSERT_TRUE( LastTTL == 40);
 
   memcpy(&m.msgHdr.id, &LastTransId, STUN_MSG_ID_SIZE);
   StunClient_HandleIncResp(clientData,
@@ -783,7 +797,7 @@ CTEST(stuntrace, run_IPv4_Stunresp_max_ttl)
   }
 
   /* First hop.. */
-  ASSERT_TRUE(LastTTL == 39);
+  ASSERT_TRUE(LastTTL == 40);
   sockaddr_initFromString( (struct sockaddr*)&hop1Addr,
                            "192.168.1.1:45674" );
   StunClient_HandleICMP(clientData,

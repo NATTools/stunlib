@@ -359,7 +359,9 @@ StunStatusCallBack(void*               userCtx,
 {
   struct hiutResult* result = (struct hiutResult*)userCtx;
 
-  result->pathElement[stunCbData->ttl].gotAnswer = true;
+  if(stunCbData->ttl <= MAX_TTL){
+    result->pathElement[stunCbData->ttl].gotAnswer = true;
+  }
 
   switch (stunCbData->stunResult)
   {
@@ -408,7 +410,6 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
     return 0;
   }
   struct hiutResult* result;
-  uint32_t           len;
 
   result = &clientData->traceResult;
 
@@ -437,21 +438,19 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
   strncpy(result->username, ufrag,    sizeof(result->username) - 1);
   strncpy(result->password, password, sizeof(result->password) - 1);
 
-  len = StunClient_startSTUNTrace(result->stunCtx,
-                                  result,
-                                  toAddr,
-                                  fromAddr,
-                                  false,
-                                  result->username,
-                                  result->password,
-                                  result->currentTTL,
-                                  result->currStunMsgId,
-                                  result->sockfd,
-                                  result->sendFunc,
-                                  StunStatusCallBack,
-                                  NULL);
-  result->stunLen = len;
-
-  return len;
+  StunClient_startSTUNTrace(result->stunCtx,
+                            result,
+                            toAddr,
+                            fromAddr,
+                            false,
+                            result->username,
+                            result->password,
+                            result->currentTTL,
+                            result->currStunMsgId,
+                            result->sockfd,
+                            result->sendFunc,
+                            StunStatusCallBack,
+                            NULL);
+  return 1;
 
 }

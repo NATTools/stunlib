@@ -284,10 +284,10 @@ dumpbuff(char*    s,
          uint32_t len)
 {
   uint32_t i;
-      printError("%s\n",  s);
+  printError("%s\n", s);
   for (i = 0; i < len; i++)
   {
-      printError("%02x,", buf[i]);
+    printError("%02x,", buf[i]);
     if (i % 10 == 0)
     {
       printError("\n");
@@ -732,11 +732,11 @@ stunEncodeUnknownAtr(StunAtrUnknown* pUnk,
   {
     return false;
   }
-    write_16( pBuf, STUN_ATTR_UnknownAttribute);
-    write_16( pBuf, ( (pUnk->numAttributes) * 2 ) );
+  write_16( pBuf, STUN_ATTR_UnknownAttribute);
+  write_16( pBuf, ( (pUnk->numAttributes) * 2 ) );
   for (i = 0; i < pUnk->numAttributes; i++)
   {
-    write_16( pBuf, pUnk->attrType[i]);
+    write_16(pBuf, pUnk->attrType[i]);
   }
   if (rest)
   {
@@ -912,6 +912,25 @@ stunEncodeNetworkStatus(StunAtrNetworkStatus* pNetworkStatus,
 }
 
 static bool
+stunEncodeTransCount(StunAtrTransCount* pTransCount,
+                     uint8_t**          pBuf,
+                     int*               nBufLen)
+{
+  if (*nBufLen < 24)
+  {
+    return false;
+  }
+  write_16(pBuf, STUN_ATTR_TransCount);   /* Attr type */
+  write_16(pBuf, 4);                    /* Length */
+  write_16(pBuf, pTransCount->reserved);
+  write_8(pBuf, pTransCount->reqCnt);
+  write_8(pBuf, pTransCount->respCnt);
+
+  *nBufLen -= 8;
+  return true;
+}
+
+static bool
 stunEncodeTTL(StunAtrTTL* pTTL,
               uint8_t**   pBuf,
               int*        nBufLen)
@@ -1011,7 +1030,7 @@ stunlib_EncodeIndication(uint8_t                msgType,
   /* STD TURN: sendInd(XorPeerAddr, Data)   no integrity */
   stunMsg.msgHdr.msgType     = msgType;
   stunMsg.xorPeerAddrEntries = 1;
-    memcpy( &stunMsg.xorPeerAddress[0], &activeDstAddr, sizeof(StunIPAddress) );
+  memcpy( &stunMsg.xorPeerAddress[0], &activeDstAddr, sizeof(StunIPAddress) );
   stunMsg.hasData      = true;
   stunMsg.data.dataLen = payloadLength;
   stunMsg.data.pData   = dataBuf;               /*The data (RTP packet) follows
@@ -1251,7 +1270,7 @@ stunDecodeIPAddrAtr(StunIPAddress*  pAddr,
     return false;
   }
 
-    read_16(pBuf, &flagtype);
+  read_16(pBuf, &flagtype);
   pAddr->familyType = (flagtype & 0xff);
 
   if (pAddr->familyType == STUN_ADDR_IPv4Family)
@@ -1500,7 +1519,7 @@ stunDecodeStreamType(StunAtrStreamType* streamTypeAtr,
 
 
 
-    read_16(pBuf, &streamTypeAtr->type);
+  read_16(pBuf, &streamTypeAtr->type);
   read_8(pBuf, &streamTypeAtr->interactivity);
   read_8(pBuf, &streamTypeAtr->pad);
   *nBufLen -= 4;
@@ -1527,6 +1546,25 @@ stunDecodeNetworkStatus(StunAtrNetworkStatus* networkStatusAtr,
   *nBufLen -= 8;
   return true;
 }
+
+static bool
+stunDecodeTransCount(StunAtrTransCount* transCountAtr,
+                     const uint8_t**    pBuf,
+                     int*               nBufLen)
+{
+  if (*nBufLen < 4)
+  {
+    return false;
+  }
+  read_16(pBuf, &transCountAtr->reserved);
+  read_8(pBuf, &transCountAtr->reqCnt);
+  read_8(pBuf, &transCountAtr->respCnt);
+
+  *nBufLen -= 8;
+  return true;
+}
+
+
 
 static bool
 stunDecodeCiscoNetworkFeedback(StunAtrCiscoNetworkFeedback* ciscoNetFeed,
@@ -1589,7 +1627,7 @@ stun_printIP4Address(FILE*               stream,
                      char const*         szHead,
                      const StunAddress4* pAdr)
 {
-    printError(stream, "  %s \t= {%d.%d.%d.%d:%d}\n", szHead,
+  printError(stream, "  %s \t= {%d.%d.%d.%d:%d}\n", szHead,
              pAdr->addr >> 24 & 0xff,
              pAdr->addr >> 16 & 0xff,
              pAdr->addr >> 8 & 0xff,
@@ -1709,7 +1747,7 @@ stun_printErrorCode(FILE*               stream,
   char buf[1512];
   memcpy(buf, pErr->reason, pErr->sizeReason);
   buf[pErr->sizeReason] = '\0';
-    printError(stream, "  error = {%d %d, \"%s\"[%d]}\n",
+  printError(stream, "  error = {%d %d, \"%s\"[%d]}\n",
              pErr->errorClass, pErr->number, buf, pErr->sizeReason);
 }
 
@@ -1718,7 +1756,7 @@ stun_printUnknown(FILE*                 stream,
                   const StunAtrUnknown* pUnk)
 {
   int i;
-    printError(stream, "  unknownAttribute = [%d]{", pUnk->numAttributes);
+  printError(stream, "  unknownAttribute = [%d]{", pUnk->numAttributes);
   for (i = 0; i < pUnk->numAttributes; i++)
   {
     printError(stream,
@@ -1726,7 +1764,7 @@ stun_printUnknown(FILE*                 stream,
                (i ? ',' : ' '),
                pUnk->attrType[i]);
   }
-    printError(stream, "\n");
+  printError(stream, "\n");
 }
 
 
@@ -1739,7 +1777,7 @@ stun_printData(FILE*           stream,
   {
     return;
   }
-    printError(stream,
+  printError(stream,
              "  %s \t= %p (%d)\n",
              szHead,
              pData->pData,
@@ -1769,10 +1807,10 @@ stun_printMessage(FILE*              stream,
     printError(stream, "NULL\n");
     return;
   }
-    printError(stream, "{\n");
-    printError(stream, "  msgHdr.type \t= %d\n",   pMsg->msgHdr.msgType);
-    printError(stream, "  msgHdr.length \t= %d\n", pMsg->msgHdr.msgLength);
-    printError(stream, "  msgHdr.id[] \t = ");
+  printError(stream, "{\n");
+  printError(stream, "  msgHdr.type \t= %d\n",   pMsg->msgHdr.msgType);
+  printError(stream, "  msgHdr.length \t= %d\n", pMsg->msgHdr.msgLength);
+  printError(stream, "  msgHdr.id[] \t = ");
 
   stun_printTransId(stream, &pMsg->msgHdr.id);
   printError(stream, "\n");
@@ -1841,7 +1879,7 @@ stun_printMessage(FILE*              stream,
 
   if (message->hasAlternateServer)
   {
-      stun_printIPAddress(stream, "alternateServer", &message->alternateServer);
+    stun_printIPAddress(stream, "alternateServer", &message->alternateServer);
   }
 
   if (message->xorPeerAddrEntries)
@@ -1896,18 +1934,18 @@ stun_printMessage(FILE*              stream,
 
   if (message->hasMessageIntegrity)
   {
-      printError(stream,
+    printError(stream,
                "  integrity.offset = %02u",
                message->messageIntegrity.offset);
-      printError(stream, "  integrity.hash[] = ");
+    printError(stream, "  integrity.hash[] = ");
     for (i = 0; i < 20; i++)
     {
       printError(stream, "%02x ", message->messageIntegrity.hash[i]);
     }
-      printError(stream, "\n");
+    printError(stream, "\n");
   }
 
-      printError(stream, "}\n");
+  printError(stream, "}\n");
 }
 
 void
@@ -1919,7 +1957,7 @@ stunlib_printBuffer(FILE*          stream,
   int i;
   int linecnt = 0;
 
-      printError(stream, "%s Buffer (%i) = [\n", szHead, len);
+  printError(stream, "%s Buffer (%i) = [\n", szHead, len);
   for (i = 0; i < len; i++, linecnt++)
   {
     if (linecnt == 4)
@@ -1930,11 +1968,11 @@ stunlib_printBuffer(FILE*          stream,
     }
     else
     {
-      printError( stream, "%c",    (linecnt ? ',' : ' ') );
+      printError( stream, "%c", (linecnt ? ',' : ' ') );
     }
-      printError( stream, " %02x", (uint8_t)( *( (pBuf + i) ) ) );
+    printError( stream, " %02x", (uint8_t)( *( (pBuf + i) ) ) );
   }
-      printError( stream, "];\n");
+  printError(stream, "];\n");
 }
 
 char const*
@@ -2093,7 +2131,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
   }
   if (restlen < message->msgHdr.msgLength)
   {
-        printError(stream,
+    printError(stream,
                "stunlib_DecodeMessage: The length in msg (%d) is larger than rest of buffer (%d)!\n",
                message->msgHdr.msgLength,
                restlen);
@@ -2104,7 +2142,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
   {
     if (stream)
     {
-        printError(stream,
+      printError(stream,
                  "Parsing attribute head with restlen=%d at %p\n",
                  restlen,
                  pCurrPtr);
@@ -2121,7 +2159,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
     }
     if (stream)
     {
-        printError(stream,
+      printError(stream,
                  "Attribute Header parsed: type == %d, length == %d\n",
                  sAtr.type,
                  sAtr.length);
@@ -2407,6 +2445,17 @@ stunlib_DecodeMessage(const uint8_t*  buf,
       message->hasBandwidthUsage = true;
       break;
 
+    case STUN_ATTR_TransCount:
+      if ( !stunDecodeTransCount(&message->transCount,
+                                 &pCurrPtr,
+                                 &restlen) )
+      {
+        return false;
+      }
+      message->hasTransCount = true;
+      break;
+
+
     case STUN_ATTR_NetworkStatus:
       if (message->hasMessageIntegrity)
       {
@@ -2669,7 +2718,7 @@ stunlib_encodeStunKeepAliveResp(StunMsgId*     transId,
 {
   StunMsgHdr h;
 
-    memcpy( &h.id, transId, sizeof(h.id) );
+  memcpy( &h.id, transId, sizeof(h.id) );
   h.msgType   = STUN_MSG_BindResponseMsg;
   h.msgLength = (srvrRflxAddr->familyType == STUN_ADDR_IPv4Family) ? 12 : 24;
 
@@ -2729,7 +2778,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream,
+      printError(stream,
                  "invalid arguments (%p, %p, %d)\n",
                  message,
                  buf,
@@ -2749,7 +2798,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Software (Name)\n");
+      printError(stream, "Invalid Software (Name)\n");
     }
     return 0;
   }
@@ -2761,7 +2810,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Priority attribute\n");
+      printError(stream, "Invalid Priority attribute\n");
     }
     return 0;
   }
@@ -2773,7 +2822,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid ICEControlled\n");
+      printError(stream, "Invalid ICEControlled\n");
     }
     return 0;
   }
@@ -2785,7 +2834,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Username\n");
+      printError(stream, "Invalid Username\n");
     }
     return 0;
   }
@@ -2797,7 +2846,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Nonce attribute\n");
+      printError(stream, "Invalid Nonce attribute\n");
     }
     return 0;
   }
@@ -2810,7 +2859,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Realm attribute\n");
+      printError(stream, "Invalid Realm attribute\n");
     }
     return 0;
   }
@@ -2822,7 +2871,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Lifetime attribute\n");
+      printError(stream, "Invalid Lifetime attribute\n");
     }
     return 0;
   }
@@ -2834,7 +2883,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid RequestedTransport attribute\n");
+      printError(stream, "Invalid RequestedTransport attribute\n");
     }
     return 0;
   }
@@ -2848,7 +2897,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid RequestedAddressFamily attribute\n");
+      printError(stream, "Invalid RequestedAddressFamily attribute\n");
     }
     return 0;
   }
@@ -2862,7 +2911,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid RequestedAddressFamily attribute\n");
+      printError(stream, "Invalid RequestedAddressFamily attribute\n");
     }
     return 0;
   }
@@ -2875,7 +2924,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid IceControlling\n");
+      printError(stream, "Invalid IceControlling\n");
     }
     return 0;
   }
@@ -2888,7 +2937,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "mappedAddress failed \n");
+      printError(stream, "mappedAddress failed \n");
     }
     return 0;
   }
@@ -2899,7 +2948,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Error attribute\n");
+      printError(stream, "Invalid Error attribute\n");
     }
     return 0;
   }
@@ -2910,7 +2959,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid unknown attribute\n");
+      printError(stream, "Invalid unknown attribute\n");
     }
     return 0;
   }
@@ -2925,7 +2974,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid xorMappedAddress\n");
+      printError(stream, "Invalid xorMappedAddress\n");
     }
     return 0;
   }
@@ -2937,7 +2986,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid ChannelNumber attribute\n");
+      printError(stream, "Invalid ChannelNumber attribute\n");
     }
     return 0;
   }
@@ -2951,7 +3000,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Alternate Server\n");
+      printError(stream, "Invalid Alternate Server\n");
     }
     return 0;
   }
@@ -2981,7 +3030,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "xorRelayAddressIPv4 failed \n");
+      printError(stream, "xorRelayAddressIPv4 failed \n");
     }
     return 0;
   }
@@ -2996,7 +3045,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "xorRelayAddressIPv6 failed \n");
+      printError(stream, "xorRelayAddressIPv6 failed \n");
     }
     return 0;
   }
@@ -3007,7 +3056,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid UseCandidate\n");
+      printError(stream, "Invalid UseCandidate\n");
     }
     return 0;
   }
@@ -3018,7 +3067,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid DontFragment\n");
+      printError(stream, "Invalid DontFragment\n");
     }
     return 0;
   }
@@ -3029,7 +3078,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid EvenPort attribute\n");
+      printError(stream, "Invalid EvenPort attribute\n");
     }
     return 0;
   }
@@ -3042,7 +3091,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Reservation Token attribute\n");
+      printError(stream, "Invalid Reservation Token attribute\n");
     }
     return 0;
   }
@@ -3054,7 +3103,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid StreamType attribute\n");
+      printError(stream, "Invalid StreamType attribute\n");
     }
     return 0;
   }
@@ -3067,7 +3116,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid BandwidthUsage attribute\n");
+      printError(stream, "Invalid BandwidthUsage attribute\n");
     }
     return 0;
   }
@@ -3079,7 +3128,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid TTL attribute\n");
+      printError(stream, "Invalid TTL attribute\n");
     }
     return 0;
   }
@@ -3091,7 +3140,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Network Status attribute\n");
+      printError(stream, "Invalid Network Status attribute\n");
     }
     return 0;
   }
@@ -3103,11 +3152,22 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Cisco Network Feedback attribute\n");
+      printError(stream, "Invalid Cisco Network Feedback attribute\n");
     }
     return 0;
   }
 
+  if ( message->hasTransCount &&
+       !stunEncodeTransCount(&message->transCount,
+                             &pCurrPtr,
+                             &restlen) )
+  {
+    if (stream)
+    {
+      printError(stream, "Invalid TransCount attribute\n");
+    }
+    return 0;
+  }
 
   /* note: DATA should be the last attribute */
   if ( message->hasData && !stunEncodeDataAtr(&message->data,
@@ -3116,7 +3176,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Data attribute\n");
+      printError(stream, "Invalid Data attribute\n");
     }
     return 0;
   }
@@ -3150,7 +3210,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Network Status attribute\n");
+      printError(stream, "Invalid Network Status attribute\n");
     }
     return 0;
   }
@@ -3162,7 +3222,7 @@ stunlib_encodeMessage(StunMessage*   message,
   {
     if (stream)
     {
-        printError(stream, "Invalid Cisco Network Feedback attribute\n");
+      printError(stream, "Invalid Cisco Network Feedback attribute\n");
     }
     return 0;
   }
@@ -3236,7 +3296,7 @@ stunlib_encodeMessage(StunMessage*   message,
   }
   if (stream)
   {
-        printError(stream, "STUN_encode, messages to encode: \n");
+    printError(stream, "STUN_encode, messages to encode: \n");
     stun_printMessage(stream, message);
     printError(stream, "STUN_encode, buffer encoded: \n");
     stunlib_printBuffer(stream, (uint8_t*)buf, msglen, "STUN");
