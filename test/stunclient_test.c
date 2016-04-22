@@ -332,8 +332,8 @@ CTEST(stunclient, logger)
 {
   StunClient_Alloc(&stunInstance);
   StunClient_RegisterLogger(stunInstance,
-                            stundbg,
-                            NULL);
+                          stundbg,
+                          NULL);
   StartBindTransaction(0);
   ASSERT_TRUE( 0 == strncmp("<STUNCLIENT:00>", logStr, 15) );
 

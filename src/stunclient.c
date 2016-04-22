@@ -1353,12 +1353,26 @@ StoreBindResp(STUN_TRANSACTION_DATA* trans,
 static int
 getRTTvalue(STUN_TRANSACTION_DATA* trans)
 {
-  int32_t stop = (trans->stop[trans->retransmits].tv_sec * 1000000 +
-                  trans->stop[trans->retransmits].tv_usec);
-  /* Always use the first stored value for start. */
-  int32_t start = (trans->start[0].tv_sec * 1000000 +
-                   trans->start[0].tv_usec);
+  int32_t start, stop = 0;
 
+
+  if ( trans->reqTransCnt > 0 && trans->reqTransCnt < STUNCLIENT_MAX_RETRANSMITS )
+  {
+    stop = (trans->stop[trans->reqTransCnt].tv_sec * 1000000 +
+            trans->stop[trans->reqTransCnt].tv_usec);
+    /* Always use the first stored value for start. */
+    start = (trans->start[trans->reqTransCnt].tv_sec * 1000000 +
+             trans->start[trans->reqTransCnt].tv_usec);
+  }
+  else
+  {
+    stop = (trans->stop[trans->retransmits].tv_sec * 1000000 +
+            trans->stop[trans->retransmits].tv_usec);
+    /* Always use the first stored value for start. */
+    start = (trans->start[0].tv_sec * 1000000 +
+             trans->start[0].tv_usec);
+
+  }
   return stop - start;
 
 
@@ -1392,7 +1406,7 @@ BindRespCallback(STUN_TRANSACTION_DATA* trans,
   res.ttl = trans->stunBindReq.ttl;
 
   res.respTransCnt = trans->respTransCnt;
-  res.reqTransCnt = trans->reqTransCnt;
+  res.reqTransCnt  = trans->reqTransCnt;
 
   StunPrint( client->logUserData, client->Log_cb, StunInfoCategory_Info,
              "<STUNCLIENT:%02d> BindResp from src: %s",
