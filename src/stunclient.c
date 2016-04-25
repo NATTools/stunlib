@@ -938,6 +938,33 @@ StartNextRetransmitTimer(STUN_TRANSACTION_DATA* trans)
   }
 }
 
+static int
+getRTTvalue(STUN_TRANSACTION_DATA* trans)
+{
+  int32_t start, stop = 0;
+
+
+  if ( trans->reqTransCnt > 0 && trans->reqTransCnt < STUNCLIENT_MAX_RETRANSMITS )
+  {
+    stop = (trans->stop[trans->reqTransCnt].tv_sec * 1000000 +
+            trans->stop[trans->reqTransCnt].tv_usec);
+    /* Always use the first stored value for start. */
+    start = (trans->start[trans->reqTransCnt].tv_sec * 1000000 +
+             trans->start[trans->reqTransCnt].tv_usec);
+  }
+  else
+  {
+    stop = (trans->stop[trans->retransmits].tv_sec * 1000000 +
+            trans->stop[trans->retransmits].tv_usec);
+    /* Always use the first stored value for start. */
+    start = (trans->start[0].tv_sec * 1000000 +
+             trans->start[0].tv_usec);
+
+  }
+  return stop - start;
+
+
+}
 
 static void
 CallBack(STUN_TRANSACTION_DATA* trans,
@@ -949,6 +976,8 @@ CallBack(STUN_TRANSACTION_DATA* trans,
   memcpy( &res.msgId, &trans->stunBindReq.transactionId, sizeof(StunMsgId) );
   res.stunResult = stunResult;
   res.ttl        = trans->stunBindReq.ttl;
+  res.rtt         = getRTTvalue(trans);
+  res.retransmits = trans->retransmits;
 
   if (trans->stunBindReq.stunCbFunc)
   {
@@ -1084,33 +1113,7 @@ StoreBindResp(STUN_TRANSACTION_DATA* trans,
   return true;
 }
 
-static int
-getRTTvalue(STUN_TRANSACTION_DATA* trans)
-{
-  int32_t start, stop = 0;
 
-
-  if ( trans->reqTransCnt > 0 && trans->reqTransCnt < STUNCLIENT_MAX_RETRANSMITS )
-  {
-    stop = (trans->stop[trans->reqTransCnt].tv_sec * 1000000 +
-            trans->stop[trans->reqTransCnt].tv_usec);
-    /* Always use the first stored value for start. */
-    start = (trans->start[trans->reqTransCnt].tv_sec * 1000000 +
-             trans->start[trans->reqTransCnt].tv_usec);
-  }
-  else
-  {
-    stop = (trans->stop[trans->retransmits].tv_sec * 1000000 +
-            trans->stop[trans->retransmits].tv_usec);
-    /* Always use the first stored value for start. */
-    start = (trans->start[0].tv_sec * 1000000 +
-             trans->start[0].tv_usec);
-
-  }
-  return stop - start;
-
-
-}
 static void
 BindRespCallback(STUN_TRANSACTION_DATA* trans,
                  const struct sockaddr* srcAddr)
