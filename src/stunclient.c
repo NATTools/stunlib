@@ -1141,6 +1141,7 @@ BindRespCallback(STUN_TRANSACTION_DATA* trans,
 
   res.rtt = getRTTvalue(trans);
   res.ttl = trans->stunBindReq.ttl;
+  res.retransmits = trans->retransmits;
 
   res.respTransCnt = trans->respTransCnt;
   res.reqTransCnt  = trans->reqTransCnt;
