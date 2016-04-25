@@ -4,6 +4,7 @@
 
 set ( stunlib_srcs
       stunclient.c
+      stunserver.c
       stunlib.c
       turnclient.c
       stuntrace.c

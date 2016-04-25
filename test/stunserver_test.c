@@ -3,7 +3,7 @@
 #include <string.h>
 
 
-#include "stunclient.h"
+#include "stunserver.h"
 #include "sockaddr_util.h"
 #include "test_utils.h"
 
