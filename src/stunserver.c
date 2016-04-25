@@ -10,6 +10,8 @@ static bool
 CreateConnectivityBindingResp(StunMessage*           stunMsg,
                               StunMsgId              transactionId,
                               const struct sockaddr* mappedSockAddr,
+                              uint8_t                reqTrnspCnt,
+                              uint8_t                respTrnspCnt,
                               uint16_t               response,
                               uint32_t               responseCode,
                               DiscussData*           discussData)
@@ -23,6 +25,12 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
 
   memset(stunMsg, 0, sizeof *stunMsg);
   stunMsg->msgHdr.msgType = response;
+
+  if(reqTrnspCnt != 0 ){
+    stunMsg->hasTransCount = true;
+    stunMsg->transCount.respCnt = respTrnspCnt;
+    stunMsg->transCount.reqCnt = reqTrnspCnt;
+  }
 
   if (mappedSockAddr->sa_family == AF_INET)
   {
@@ -157,6 +165,8 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                        const char*            password,
                                        const struct sockaddr* mappedAddr,
                                        const struct sockaddr* dstAddr,
+                                       uint8_t                reqTrnspCnt,
+                                       uint8_t                respTrnspCnt,
                                        void*                  userData,
                                        STUN_SENDFUNC          sendFunc,
                                        int                    proto,
@@ -170,6 +180,8 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
   if ( CreateConnectivityBindingResp(&stunRespMsg,
                                      transactionId,
                                      mappedAddr,
+                                     reqTrnspCnt,
+                                     respTrnspCnt,
                                      (responseCode ==
                                       200) ? STUN_MSG_BindResponseMsg :
                                      STUN_MSG_BindErrorResponseMsg,

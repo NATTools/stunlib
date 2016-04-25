@@ -126,6 +126,8 @@ CTEST(stunserver, SendResp_Valid)
                                                        mappedAddr,
                                                        (struct sockaddr*)&
                                                        servAddr,
+                                                       0,
+                                                       0,
                                                        NULL,
                                                        SendRawStun,
                                                        0,
@@ -142,6 +144,8 @@ CTEST(stunserver, SendResp_Valid)
                                                       mappedAddr,
                                                       (struct sockaddr*)&
                                                       servAddr,
+                                                      2,
+                                                      3,
                                                       NULL,
                                                       SendRawStun,
                                                       0,
@@ -170,6 +174,8 @@ CTEST(stunserver, SendResp_Valid_IPv6)
                                                        mappedAddr,
                                                        (struct sockaddr*)&
                                                        servAddr,
+                                                       0,
+                                                       0,
                                                        NULL,
                                                        SendRawStun,
                                                        0,
@@ -186,6 +192,8 @@ CTEST(stunserver, SendResp_Valid_IPv6)
                                                       mappedAddr,
                                                       (struct sockaddr*)&
                                                       servAddr,
+                                                      0,
+                                                      0,
                                                       NULL,
                                                       SendRawStun,
                                                       0,
@@ -221,6 +229,8 @@ CTEST(stunserver, SendDiscussResp_Valid)
                                                        stunServerAddr,
                                                        (struct sockaddr*)&
                                                        stunServerAddr,
+                                                       2,
+                                                       2,
                                                        NULL,
                                                        SendRawStun,
                                                        0,
