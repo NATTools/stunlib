@@ -66,9 +66,8 @@ CTEST(stunserver, Encode_decode)
   StunMsgId              stunId;
 
   uint8_t stunBuff[STUN_MAX_PACKET_SIZE];
-  stunlib_createId(&stunId,
-                   232323,
-                   3);
+  stunlib_createId(&stunId);
+
   sockaddr_initFromString( (struct sockaddr*)&mappedAddr,
                            "193.200.93.152:3478" );
   CreateConnectivityBindingResp(&stunMsg,

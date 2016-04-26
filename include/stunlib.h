@@ -863,9 +863,8 @@ stunlib_printBuffer(FILE*          stream,
 
 
 void
-stunlib_createId(StunMsgId*    pId,
-                 long          randval,
-                 unsigned char retries);
+stunlib_createId(StunMsgId*    pId);
+
 bool
 stunlib_addRealm(StunMessage* stunMsg,
                  const char*  realm,

@@ -220,13 +220,6 @@ TurnTransactionIdString(char*    dst,
 }
 
 static int
-TurnRand(void)
-{
-  return rand();
-}
-
-
-static int
 getAddrFamily(const TURN_INSTANCE_DATA* pInst)
 {
   return pInst->turnAllocateReq.ai_family;
@@ -1271,11 +1264,9 @@ static void
 BuildInitialAllocateReq(TURN_INSTANCE_DATA* pInst,
                         StunMessage*        pReq)
 {
-  unsigned long rndval = TurnRand();
-
   memset( pReq, 0, sizeof(StunMessage) );
   pReq->msgHdr.msgType = STUN_MSG_AllocateRequestMsg;
-  stunlib_createId(&pReq->msgHdr.id, rndval, 0);
+  stunlib_createId(&pReq->msgHdr.id);
 
   stunlib_addSoftware(pReq, pInst->softwareVersionStr, STUN_DFLT_PAD);
   stunlib_addRequestedTransport(pReq, STUN_REQ_TRANSPORT_UDP);
@@ -1316,11 +1307,9 @@ static void
 BuildNewAllocateReq(TURN_INSTANCE_DATA* pInst,
                     StunMessage*        pReq)
 {
-  unsigned long rndval = TurnRand();
-
   memset( pReq, 0, sizeof(StunMessage) );
   pReq->msgHdr.msgType = STUN_MSG_AllocateRequestMsg;
-  stunlib_createId(&pReq->msgHdr.id, rndval, 1);
+  stunlib_createId(&pReq->msgHdr.id);
   stunlib_addRealm(pReq, pInst->userCredentials.realm, STUN_DFLT_PAD);
   stunlib_addUserName(pReq, pInst->userCredentials.stunUserName, STUN_DFLT_PAD);
   stunlib_addNonce(pReq, pInst->userCredentials.nonce, STUN_DFLT_PAD);
@@ -1363,10 +1352,8 @@ BuildRefreshAllocateReq(TURN_INSTANCE_DATA* pInst,
                         StunMessage*        pReq,
                         uint32_t            lifetimeSec)
 {
-  unsigned long rndval = TurnRand();
-
   memset( pReq, 0, sizeof(StunMessage) );
-  stunlib_createId(&pReq->msgHdr.id, rndval, 1);
+  stunlib_createId(&pReq->msgHdr.id);
   pReq->hasLifetime    = true;
   pReq->lifetime.value = lifetimeSec;
 
@@ -1396,7 +1383,7 @@ BuildChannelBindReq(TURN_INSTANCE_DATA* pInst,
 
   memset( pReq,           0, sizeof(StunMessage) );
   pReq->msgHdr.msgType = STUN_MSG_ChannelBindRequestMsg;
-  stunlib_createId(&pReq->msgHdr.id, TurnRand(), 0);
+  stunlib_createId(&pReq->msgHdr.id);
 
   if (peerAddr->sa_family == AF_INET)
   {
@@ -1444,7 +1431,7 @@ BuildCreatePermReq(TURN_INSTANCE_DATA* pInst,
 
   memset( pReq, 0, sizeof(StunMessage) );
   pReq->msgHdr.msgType = STUN_MSG_CreatePermissionRequestMsg;
-  stunlib_createId(&pReq->msgHdr.id, TurnRand(), 0);
+  stunlib_createId(&pReq->msgHdr.id);
 
   /* peer address(es) */
   for (i = 0; i < pInst->createPermInfo.numberOfPeers; i++)

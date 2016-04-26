@@ -124,9 +124,8 @@ handleStunNoAnswer(struct hiutResult* result)
     result->remoteAlive = false;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId,
-                     rand(), result->currentTTL);
-
+    stunlib_createId(&result->currStunMsgId);
+    
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
@@ -174,8 +173,8 @@ handleStunNoAnswer(struct hiutResult* result)
     {
       result->currentTTL++;
     }
-    stunlib_createId(&result->currStunMsgId,
-                     rand(), result->currentTTL);
+    stunlib_createId(&result->currStunMsgId);
+
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
@@ -207,8 +206,7 @@ handleStunRespIcmp(struct hiutResult* result,
     result->remoteAlive = true;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId,
-                     rand(), result->currentTTL);
+    stunlib_createId(&result->currStunMsgId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
@@ -245,8 +243,7 @@ handleStunRespIcmp(struct hiutResult* result,
                      false,
                      false);
 
-        stunlib_createId(&result->currStunMsgId,
-                         rand(), result->currentTTL);
+        stunlib_createId(&result->currStunMsgId);
 
         StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                    result,
@@ -312,8 +309,7 @@ handleStunRespSucsessfull(struct hiutResult* result,
     result->remoteAlive = true;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId,
-                     rand(), result->currentTTL);
+    stunlib_createId(&result->currStunMsgId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
@@ -415,7 +411,7 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
 
   result->currentTTL = MAX_TTL;
   result->userCtx    = userCtx;
-  stunlib_createId(&result->currStunMsgId, rand(), 1);
+  stunlib_createId(&result->currStunMsgId);
   result->stunCtx = clientData;
   /* Fill inn the hiut struct so we get something back in the CB */
   /* TODO: Fix the struct so we do not store information twice!! */

@@ -1000,7 +1000,7 @@ stunlib_EncodeIndication(uint8_t                msgType,
   int           length = 0;
 
   memset( &stunMsg, 0, sizeof(StunMessage) );
-  stunlib_createId(&stunMsg.msgHdr.id, rand(), 0);
+  stunlib_createId(&stunMsg.msgHdr.id);
 
   if (dstAddr->sa_family == AF_INET)
   {
@@ -3460,16 +3460,9 @@ stunlib_transIdIsEqual(const StunMsgId* a,
  * Create our magic id....
  *********/
 void
-stunlib_createId(StunMsgId*    pId,
-                 long          randval,
-                 unsigned char retries)
+stunlib_createId(StunMsgId*    pId)
 {
-  char     xorval[16] = "cafeogslikt";
-  uint8_t* pIdBuf     = pId->octet;
-  write_32(&pIdBuf, randval);
-  write_16(&pIdBuf, retries);
-  write_16(&pIdBuf, 0);
-  write_32_xor(&pIdBuf, randval, (uint8_t*)xorval);
+  arc4random_buf(pId, STUN_MSG_ID_SIZE);
 }
 
 
