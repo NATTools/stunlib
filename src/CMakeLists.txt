@@ -37,6 +37,10 @@ if( OPENSSL_FOUND )
   list(APPEND ADDITIONAL_LIBS ${OPENSSL_LIBRARIES})
 endif( OPENSSL_FOUND )
 
+# Todo fix propper library discovery.
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+   list(APPEND ADDITIONAL_LIBS "bsd")
+endif()
 
 target_link_libraries ( stunlib PRIVATE sockaddrutil
                         ${ADDITIONAL_LIBS})

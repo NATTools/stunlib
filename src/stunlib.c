@@ -10,6 +10,7 @@
 #  define SHA1 CC_SHA1
 #else
 
+#include <bsd/stdlib.h>
 #include <openssl/md5.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
