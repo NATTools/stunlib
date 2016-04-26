@@ -813,7 +813,7 @@ SendStunReq(STUN_TRANSACTION_DATA* trans,
   }
 
   /*Store Time so we can messure RTT */
-  gettimeofday(&trans->start[trans->retransmits], NULL);
+  gettimeofday(&trans->start[0], NULL);
   if (trans->stunBindReq.sendFunc != NULL)
   {
     trans->stunBindReq.sendFunc(trans->client->userCtx,
@@ -893,8 +893,7 @@ RetransmitLastReq(STUN_TRANSACTION_DATA*   trans,
                                              NULL);
 
   }
-
-  gettimeofday(&trans->start[trans->retransmits + 1], NULL);
+  gettimeofday(&trans->start[trans->retransmits +1], NULL);
   trans->stunBindReq.sendFunc(trans->client->userCtx,
                               trans->stunBindReq.sockhandle,
                               stunReqMsgBuf,
@@ -946,11 +945,11 @@ getRTTvalue(STUN_TRANSACTION_DATA* trans)
 
   if ( trans->reqTransCnt > 0 && trans->reqTransCnt < STUNCLIENT_MAX_RETRANSMITS )
   {
-    stop = (trans->stop[trans->reqTransCnt].tv_sec * 1000000 +
-            trans->stop[trans->reqTransCnt].tv_usec);
+    stop = (trans->stop[trans->reqTransCnt-1].tv_sec * 1000000 +
+            trans->stop[trans->reqTransCnt-1].tv_usec);
     /* Always use the first stored value for start. */
-    start = (trans->start[trans->reqTransCnt].tv_sec * 1000000 +
-             trans->start[trans->reqTransCnt].tv_usec);
+    start = (trans->start[trans->reqTransCnt-1].tv_sec * 1000000 +
+             trans->start[trans->reqTransCnt-1].tv_usec);
   }
   else
   {
@@ -962,8 +961,6 @@ getRTTvalue(STUN_TRANSACTION_DATA* trans)
 
   }
   return stop - start;
-
-
 }
 
 static void
@@ -1005,7 +1002,7 @@ CommonRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans,
     max = STUNCLIENT_MAX_RETRANSMITS;
   }
 
-  if ( (trans->retransmits < max)
+  if ( (trans->retransmits < (max-1))
        && (stunTimeoutList[trans->retransmits] != 0) ) /* can be 0 terminated if
                                                         * using fewer
                                                         * retransmits
@@ -1019,10 +1016,11 @@ CommonRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans,
               "<STUNCLIENT:%02d> Retrans %s Retry: %d to %s",
               trans->inst, errStr, trans->retransmits, peer);
     StunMessage stunReqMsg;
+    trans->retransmits++;
     BuildStunBindReq(trans, &stunReqMsg);
     RetransmitLastReq(trans, &stunReqMsg, &trans->stunBindReq.serverAddr);
     StartNextRetransmitTimer(trans);
-    trans->retransmits++;
+
     trans->stats.Retransmits++;
   }
   else
@@ -1057,6 +1055,7 @@ CancelRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans)
                                                         **/
   {
     StartNextRetransmitTimer(trans);
+
     trans->retransmits++;
   }
   else

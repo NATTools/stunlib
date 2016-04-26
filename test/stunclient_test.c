@@ -48,6 +48,7 @@ char logStr[200];
 int lastReqCnt;
 int lastTranspRespCnt;
 int lastTranspReqCnt;
+int lastRTT;
 
 CTEST_DATA(data)
 {
@@ -64,6 +65,7 @@ StunStatusCallBack(void*               ctx,
   stunResult = retData->stunResult;
   lastTranspRespCnt = retData->respTransCnt;
   lastTranspReqCnt = retData->reqTransCnt;
+  lastRTT = retData->rtt;
   /* printf("Got STUN status callback\n");// (Result (%i)\n",
    * retData->stunResult); */
 }
@@ -445,6 +447,8 @@ CTEST(stunclient, BindReq_TranportCnt)
 
   SimBindSuccessResp(runningAsIPv6, true);
   ASSERT_TRUE(stunResult == StunResult_BindOk);
+
+  ASSERT_TRUE(lastRTT > 2);
   ASSERT_TRUE(lastTranspReqCnt == 3);
   ASSERT_TRUE(lastTranspRespCnt == 2);
   StunClient_free(stunInstance);
