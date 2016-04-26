@@ -6,7 +6,7 @@
 
 
 
-static bool
+bool
 CreateConnectivityBindingResp(StunMessage*           stunMsg,
                               StunMsgId              transactionId,
                               const struct sockaddr* mappedSockAddr,

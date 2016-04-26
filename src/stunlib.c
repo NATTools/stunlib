@@ -1560,7 +1560,7 @@ stunDecodeTransCount(StunAtrTransCount* transCountAtr,
   read_8(pBuf, &transCountAtr->reqCnt);
   read_8(pBuf, &transCountAtr->respCnt);
 
-  *nBufLen -= 8;
+  *nBufLen -= 4;
   return true;
 }
 
@@ -2553,7 +2553,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
   {
     if (stream)
     {
-      fprintf(stream, "<stunmsg> Message length or attribute length error.\n");
+      fprintf(stream, "<stunmsg> Message length or attribute length error(%i).\n", restlen);
     }
     return false;
   }
@@ -3505,12 +3505,10 @@ bool
 stunlib_checkFingerPrint(const uint8_t* buf,
                          uint32_t       fpOffset)
 {
-
   uint32_t       crc = stunlib_calculateFingerprint(buf, fpOffset - 4);
   uint32_t       val;
   const uint8_t* pos = buf + fpOffset;
   read_32(&pos, &val);
-
   if (crc == val)
   {
     return true;

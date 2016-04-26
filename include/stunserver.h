@@ -16,6 +16,15 @@ extern "C" {
 #include <stdbool.h>
 #endif
 
+bool
+CreateConnectivityBindingResp(StunMessage*           stunMsg,
+                              StunMsgId              transactionId,
+                              const struct sockaddr* mappedSockAddr,
+                              uint8_t                reqTrnspCnt,
+                              uint8_t                respTrnspCnt,
+                              uint16_t               response,
+                              uint32_t               responseCode,
+                              DiscussData*           discussData);
 /********* Server handling: send STUN BIND RESP *************/
 bool
 StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
