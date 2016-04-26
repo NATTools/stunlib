@@ -587,6 +587,11 @@ typedef void (* STUN_ERR_FUNC)(const char* fmt,
 ***** API Funcs ******
 **********************/
 
+/* transaction id compare */
+bool
+stunlib_transIdIsEqual(const StunMsgId* a,
+               const StunMsgId* b);
+
 /***********************************************/
 /*************  Decode functions ***************/
 /***********************************************/

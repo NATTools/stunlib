@@ -3448,6 +3448,13 @@ stunlib_addChannelNumber(StunMessage* stunMsg,
   return true;
 }
 
+/* transaction id compare */
+bool
+stunlib_transIdIsEqual(const StunMsgId* a,
+               const StunMsgId* b)
+{
+  return (memcmp(a, b, STUN_MSG_ID_SIZE) == 0);
+}
 
 /*****
  * Create our magic id....

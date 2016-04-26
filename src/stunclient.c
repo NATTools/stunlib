@@ -133,16 +133,6 @@ StunMsgToInternalStunSig(const StunMessage* msg)
 }
 
 
-/* transaction id compare */
-static bool
-TransIdIsEqual(const StunMsgId* a,
-               const StunMsgId* b)
-{
-  return (memcmp(a, b, STUN_MSG_ID_SIZE) == 0);
-}
-
-
-
 static void
 StoreStunBindReq(STUN_TRANSACTION_DATA* trans,
                  StunBindReqStruct*     pMsgIn)
@@ -437,7 +427,7 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
-         TransIdIsEqual(&msg->msgHdr.id, &trans->stunBindReq.transactionId) )
+         stunlib_transIdIsEqual(&msg->msgHdr.id, &trans->stunBindReq.transactionId) )
     {
       StunRespStruct m;
       gettimeofday(&trans->stop[trans->retransmits], NULL);
@@ -477,7 +467,7 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
     {
       STUN_TRANSACTION_DATA* trans = &clientData->data[i];
       if ( trans->inUse &&
-           TransIdIsEqual(&clientData->traceResult.currStunMsgId,
+           stunlib_transIdIsEqual(&clientData->traceResult.currStunMsgId,
                           &trans->stunBindReq.transactionId) )
       {
         StunRespStruct m;
@@ -522,7 +512,7 @@ StunClient_cancelBindingTransaction(STUN_CLIENT_DATA* clientData,
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
-         TransIdIsEqual(&transactionId, &trans->stunBindReq.transactionId) )
+         stunlib_transIdIsEqual(&transactionId, &trans->stunBindReq.transactionId) )
     {
       StunClientMain(clientData, i, STUN_SIGNAL_Cancel, NULL);
       return i;
