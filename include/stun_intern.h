@@ -124,7 +124,7 @@ typedef struct
 
   /* icmp */
   uint32_t ICMPtype;
-  //uint32_t ttl;
+  /* uint32_t ttl; */
 
   /* DISCUSS */
   bool        hasDiscuss;

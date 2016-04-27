@@ -62,7 +62,7 @@ struct hiutResult {
 
 
   /* Initial Length of first STUN packet (TTL=1) */
-  //uint32_t               stunLen;
+  /* uint32_t               stunLen; */
   struct hiutPathElement pathElement[MAX_TTL + 1];
   bool                   remoteAlive;
   /* struct hiutTTLinfo     ttlInfo[MAX_TTL]; */

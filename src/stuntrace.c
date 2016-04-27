@@ -125,7 +125,7 @@ handleStunNoAnswer(struct hiutResult* result)
     result->currentTTL  = 1;
 
     stunlib_createId(&result->currStunMsgId);
-    
+
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
@@ -355,7 +355,8 @@ StunStatusCallBack(void*               userCtx,
 {
   struct hiutResult* result = (struct hiutResult*)userCtx;
 
-  if(stunCbData->ttl <= MAX_TTL){
+  if (stunCbData->ttl <= MAX_TTL)
+  {
     result->pathElement[stunCbData->ttl].gotAnswer = true;
   }
 

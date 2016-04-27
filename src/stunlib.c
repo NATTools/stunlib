@@ -2554,7 +2554,9 @@ stunlib_DecodeMessage(const uint8_t*  buf,
   {
     if (stream)
     {
-      fprintf(stream, "<stunmsg> Message length or attribute length error(%i).\n", restlen);
+      fprintf(stream,
+              "<stunmsg> Message length or attribute length error(%i).\n",
+              restlen);
     }
     return false;
   }
@@ -3452,7 +3454,7 @@ stunlib_addChannelNumber(StunMessage* stunMsg,
 /* transaction id compare */
 bool
 stunlib_transIdIsEqual(const StunMsgId* a,
-               const StunMsgId* b)
+                       const StunMsgId* b)
 {
   return (memcmp(a, b, STUN_MSG_ID_SIZE) == 0);
 }
@@ -3461,7 +3463,7 @@ stunlib_transIdIsEqual(const StunMsgId* a,
  * Create our magic id....
  *********/
 void
-stunlib_createId(StunMsgId*    pId)
+stunlib_createId(StunMsgId* pId)
 {
   arc4random_buf(pId, STUN_MSG_ID_SIZE);
 }

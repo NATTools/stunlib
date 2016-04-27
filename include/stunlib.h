@@ -191,6 +191,7 @@ extern "C" {
                                                                                               *
                                                                                               *
                                                                                               *
+                                                                                              *
                                                                                               *msec
                                                                                               **/
 #define STUNCLIENT_DFLT_TICK_TIMER_MS            50
@@ -553,7 +554,7 @@ typedef struct
   bool                        hasCiscoNetFeedResp;
   StunAtrCiscoNetworkFeedback ciscoNetFeedResp;
 
-  bool                        hasTransCount;
+  bool              hasTransCount;
   StunAtrTransCount transCount;
 
   /* No value, only flaged */
@@ -590,7 +591,7 @@ typedef void (* STUN_ERR_FUNC)(const char* fmt,
 /* transaction id compare */
 bool
 stunlib_transIdIsEqual(const StunMsgId* a,
-               const StunMsgId* b);
+                       const StunMsgId* b);
 
 /***********************************************/
 /*************  Decode functions ***************/
@@ -863,7 +864,7 @@ stunlib_printBuffer(FILE*          stream,
 
 
 void
-stunlib_createId(StunMsgId*    pId);
+stunlib_createId(StunMsgId* pId);
 
 bool
 stunlib_addRealm(StunMessage* stunMsg,

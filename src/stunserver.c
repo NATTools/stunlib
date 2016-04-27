@@ -26,10 +26,11 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
   memset(stunMsg, 0, sizeof *stunMsg);
   stunMsg->msgHdr.msgType = response;
 
-  if(reqTrnspCnt != 0 ){
-    stunMsg->hasTransCount = true;
+  if (reqTrnspCnt != 0)
+  {
+    stunMsg->hasTransCount      = true;
     stunMsg->transCount.respCnt = respTrnspCnt;
-    stunMsg->transCount.reqCnt = reqTrnspCnt;
+    stunMsg->transCount.reqCnt  = reqTrnspCnt;
   }
 
   if (mappedSockAddr->sa_family == AF_INET)

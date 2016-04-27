@@ -427,7 +427,8 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
-         stunlib_transIdIsEqual(&msg->msgHdr.id, &trans->stunBindReq.transactionId) )
+         stunlib_transIdIsEqual(&msg->msgHdr.id,
+                                &trans->stunBindReq.transactionId) )
     {
       StunRespStruct m;
       gettimeofday(&trans->stop[trans->retransmits], NULL);
@@ -468,7 +469,7 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
       STUN_TRANSACTION_DATA* trans = &clientData->data[i];
       if ( trans->inUse &&
            stunlib_transIdIsEqual(&clientData->traceResult.currStunMsgId,
-                          &trans->stunBindReq.transactionId) )
+                                  &trans->stunBindReq.transactionId) )
       {
         StunRespStruct m;
         gettimeofday(&trans->stop[trans->retransmits], NULL);
@@ -512,7 +513,8 @@ StunClient_cancelBindingTransaction(STUN_CLIENT_DATA* clientData,
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
-         stunlib_transIdIsEqual(&transactionId, &trans->stunBindReq.transactionId) )
+         stunlib_transIdIsEqual(&transactionId,
+                                &trans->stunBindReq.transactionId) )
     {
       StunClientMain(clientData, i, STUN_SIGNAL_Cancel, NULL);
       return i;
@@ -933,13 +935,14 @@ getRTTvalue(STUN_TRANSACTION_DATA* trans)
   int32_t start, stop = 0;
 
 
-  if ( trans->reqTransCnt > 0 && trans->reqTransCnt < STUNCLIENT_MAX_RETRANSMITS )
+  if ( (trans->reqTransCnt > 0) &&
+       (trans->reqTransCnt < STUNCLIENT_MAX_RETRANSMITS) )
   {
-    stop = (trans->stop[trans->reqTransCnt-1].tv_sec * 1000000 +
-            trans->stop[trans->reqTransCnt-1].tv_usec);
+    stop = (trans->stop[trans->reqTransCnt - 1].tv_sec * 1000000 +
+            trans->stop[trans->reqTransCnt - 1].tv_usec);
     /* Always use the first stored value for start. */
-    start = (trans->start[trans->reqTransCnt-1].tv_sec * 1000000 +
-             trans->start[trans->reqTransCnt-1].tv_usec);
+    start = (trans->start[trans->reqTransCnt - 1].tv_sec * 1000000 +
+             trans->start[trans->reqTransCnt - 1].tv_usec);
   }
   else
   {
@@ -961,8 +964,8 @@ CallBack(STUN_TRANSACTION_DATA* trans,
   memset( &res, 0, sizeof (StunCallBackData_T) );
 
   memcpy( &res.msgId, &trans->stunBindReq.transactionId, sizeof(StunMsgId) );
-  res.stunResult = stunResult;
-  res.ttl        = trans->stunBindReq.ttl;
+  res.stunResult  = stunResult;
+  res.ttl         = trans->stunBindReq.ttl;
   res.rtt         = getRTTvalue(trans);
   res.retransmits = trans->retransmits;
 
@@ -992,7 +995,7 @@ CommonRetryTimeoutHandler(STUN_TRANSACTION_DATA* trans,
     max = STUNCLIENT_MAX_RETRANSMITS;
   }
 
-  if ( (trans->retransmits < (max-1))
+  if ( ( trans->retransmits < (max - 1) )
        && (stunTimeoutList[trans->retransmits] != 0) ) /* can be 0 terminated if
                                                         * using fewer
                                                         * retransmits
@@ -1128,8 +1131,8 @@ BindRespCallback(STUN_TRANSACTION_DATA* trans,
 
   /* So did we loose a packet, or got an answer to the first response?*/
 
-  res.rtt = getRTTvalue(trans);
-  res.ttl = trans->stunBindReq.ttl;
+  res.rtt         = getRTTvalue(trans);
+  res.ttl         = trans->stunBindReq.ttl;
   res.retransmits = trans->retransmits;
 
   res.respTransCnt = trans->respTransCnt;

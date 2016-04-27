@@ -5,7 +5,7 @@
 #define TURNCLIENT_H
 
 
-//#include <string.h>
+/* #include <string.h> */
 #include <netinet/in.h>
 
 #include "stunlib.h"   /* stun enc/dec and msg formats*/
@@ -18,7 +18,7 @@ extern "C" {
 enum {
   TURN_DFLT_PORT            = 3478,
   TURN_MAX_PERMISSION_PEERS =   12   /* max. number of  Peers in a
-                                      *createPermissionRequest */
+                                      * createPermissionRequest */
 };
 
 
@@ -34,34 +34,34 @@ typedef enum
   TurnResult_AllocOk,                       /* Turn allocation was successful */
   TurnResult_AllocFail,                     /* Turn Allocation failed */
   TurnResult_AllocFailNoAnswer,             /* Turn Allocation failed - no
-                                             *contact with turn server */
+                                             * contact with turn server */
   TurnResult_AllocUnauthorised,             /* passwd/username is incorrect */
   TurnResult_CreatePermissionOk,            /* successfull CreatePermission */
   TurnResult_CreatePermissionFail,          /* Failed CreatePermission - no
-                                             *contact with turn server */
+                                             * contact with turn server */
   TurnResult_CreatePermissionNoAnswer,      /* CreatePermission failed  */
   TurnResult_CreatePermissionQuotaReached,  /* Quouta reached */
   TurnResult_PermissionRefreshFail,         /* Refresh Permission failed  */
   TurnResult_ChanBindOk,                    /* successful Channel Bind */
   TurnResult_ChanBindFail,                  /* Channel Bind failed */
   TurnResult_ChanBindFailNoanswer,          /* Channel bind failed - no contact
-                                             *with turn server */
+                                             * with turn server */
   TurnResult_RefreshFail,                   /* Allocation Refresh failed */
   TurnResult_RefreshFailNoAnswer,           /* Allocation Refresh failed */
   TurnResult_RelayReleaseComplete,          /* Relay has been sucessfully
-                                             *released */
+                                             * released */
   TurnResult_RelayReleaseFailed,            /* Relay released failed */
   TurnResult_InternalError,
   TurnResult_MalformedRespWaitAlloc         /* server problem occurred when
-                                             *waiting for alloc resp */
+                                             * waiting for alloc resp */
 } TurnResult_T;
 
 
 /*
  * Result of successful Turn allocation (TurnResult_AllocOk) has the following
- *format.
+ * format.
  *     srflxAddr -   Server Reflexive Address/port.  This is source addr/port of
- *the AllocateRequest as seen by the turn server
+ * the AllocateRequest as seen by the turn server
  *     relAddr   -   Relay Address/Port. As allocated on the  turn server.
  */
 typedef struct
@@ -75,7 +75,7 @@ typedef struct
 
 
 /* Signalled back to the caller as a parameter in the TURN callback (see TURNCB)
- **/
+**/
 typedef struct
 {
   TurnResult_T turnResult;
@@ -114,27 +114,27 @@ TurnStats_T;
 
 /* Defines how a user of turn sends data on e.g. socket */
 typedef void (* TURN_SEND_FUNC)(const uint8_t*         buffer,      /* ptr to
-                                                                     *buffer to
-                                                                     *send */
+                                                                     * buffer to
+                                                                     * send */
                                 size_t                 bufLen,      /* length of
-                                                                     *send
-                                                                     *buffer */
+                                                                     * send
+                                                                     * buffer */
                                 const struct sockaddr* dstAddr,     /* Optional,
-                                                                     *if
-                                                                     *connected
-                                                                     *to socket
+                                                                     * if
+                                                                     * connected
+                                                                     * to socket
                                                                      **/
                                 void*                  userCtx);    /* context -
-                                                                     *e.g.
-                                                                     *socket
-                                                                     *handle */
+                                                                     * e.g.
+                                                                     * socket
+                                                                     * handle */
 
 
 /* Signalling back to user e.g. result of AllocateResp, ChanBindResp etc...
  *   userCtx        - User provided context, as provided in
- *TurnClient_startAllocateTransaction(userCtx,...)
+ * TurnClient_startAllocateTransaction(userCtx,...)
  *   TurnCbData     - User provided turn callback data. Turn writes status here.
- *e.g. Alloc ok + reflexive + relay address
+ * e.g. Alloc ok + reflexive + relay address
  */
 typedef void (* TURN_CB_FUNC)(void*               userCtx,
                               TurnCallBackData_T* turnCbData);
@@ -149,27 +149,27 @@ typedef void (* TURN_INFO_FUNC)(void*              userCtx,
  *  Initiate a Turn Allocate Transaction
  *     instance         -  instance data
  *     tickMsec         -  Tells turnclient how often TurnClient_HandleTick() is
- *called.
+ * called.
  *     funcPtr          -  Will be called by Turn when it outputs management
- *info and trace.
+ * info and trace.
  *     SwVerStr         -  Software version string to be sent in TURN Requests*
  *     turnServerAddr   -  Address of TURN server
  *     userName         -  \0 terminated string. Max
- *STUN_MSG_MAX_USERNAME_LENGTH-1 chars.
+ * STUN_MSG_MAX_USERNAME_LENGTH-1 chars.
  *     password         -  \0 terminated string. Max
- *STUN_MSG_MAX_PASSWORD_LENGTH-1 chars.
+ * STUN_MSG_MAX_PASSWORD_LENGTH-1 chars.
  *     ai_family         -  requested address family (AF_INET or AF_INET6)
  *     sendFunc         -  function used to send STUN packet.
- *send(sockhandle,buff, len, turnServerAddr, userCtx)
+ * send(sockhandle,buff, len, turnServerAddr, userCtx)
  *     turnCbFunc       -  user provided callback function used by turn to
- *signal the result of an allocation or channel bind etc...
+ * signal the result of an allocation or channel bind etc...
  *     TurnCbData       -  user provided callback turn data. turn writes to this
- *data area.
+ * data area.
  *     evenPortAndReserve - reserve an even port n and next port n+1
  *     reservationToken -  request a previously reserved port for the allocation
  *     returns          -  Turn instance/context. Application should store this
- *in further calls to TurnClient_StartChannelBindReq(),
- *TurnClient_HandleIncResp().
+ * in further calls to TurnClient_StartChannelBindReq(),
+ * TurnClient_HandleIncResp().
  */
 bool
 TurnClient_StartAllocateTransaction(TURN_INSTANCE_DATA**   instp,
@@ -200,15 +200,15 @@ TurnClient_StartChannelBindReq(TURN_INSTANCE_DATA*    inst,
 
 /*
  * Create a permission in turn server.  i.e. CreatePermission(List of
- *RemotePeers).
+ * RemotePeers).
  * This will enable the turn server to route DataIndicatins from the Remote
- *peers.
+ * peers.
  *
  *     instance         -  instance pointer
  *     noOfPeers        - Number of peer addresses in peerTrnspAddrStr string
  *                        array
  *     peerTrnspAddrStr - Pointer to array of strings in format "a.b.c.d:port".
- *Note - Port is not used in create permission.
+ * Note - Port is not used in create permission.
  *
  */
 bool
@@ -255,7 +255,7 @@ TurnClient_SendPacket(TURN_INSTANCE_DATA*    inst,
                       uint32_t               dataLen,
                       uint32_t               offset,
                       const struct sockaddr* peerAddr,
-                      bool needChannelDataPadding);
+                      bool                   needChannelDataPadding);
 
 /*
  * handle received turn packets
@@ -280,8 +280,10 @@ TurnClient_HandleIncResp(TURN_INSTANCE_DATA* inst,
                          StunMessage*        msg,
                          uint8_t*            buf);
 
-bool TurnClient_hasBeenRedirected(TURN_INSTANCE_DATA *pInst);
-const struct sockaddr * TurnClient_getRedirectedServerAddr(TURN_INSTANCE_DATA *pInst);
+bool
+TurnClient_hasBeenRedirected(TURN_INSTANCE_DATA* pInst);
+const struct sockaddr*
+TurnClient_getRedirectedServerAddr(TURN_INSTANCE_DATA* pInst);
 
 
 

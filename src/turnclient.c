@@ -392,7 +392,7 @@ ChannelBindReqParamsOk(TURN_INSTANCE_DATA*    pInst,
   if ( !IsValidBindChannelNumber(channelNumber) )  /* channel number ignored if
                                                     * creating a permission */
   {
-      TurnPrint(pInst,
+    TurnPrint(pInst,
               TurnInfoCategory_Error,
               "<TURNCLIENT:%d> ChannelBindReq - illegal channel number %0X ",
               pInst->id,
@@ -402,7 +402,7 @@ ChannelBindReqParamsOk(TURN_INSTANCE_DATA*    pInst,
 
   if ( !sockaddr_isSet(peerTrnspAddr) )
   {
-      TurnPrint(pInst,
+    TurnPrint(pInst,
               TurnInfoCategory_Error,
               "<TURNCLIENT:%d> ChannelBindReq - illegal peerTRansport Address ",
               pInst->id);
@@ -636,25 +636,25 @@ TurnClientGetStats(const TURN_INSTANCE_DATA* pInst,
 {
   if (pInst->state >= TURN_STATE_Allocated)
   {
-          sockaddr_copy( (struct sockaddr*)&Stats->AllocResp.srflxAddr,
+    sockaddr_copy( (struct sockaddr*)&Stats->AllocResp.srflxAddr,
                    (struct sockaddr*)&pInst->srflxAddr );
 
-          sockaddr_copy( (struct sockaddr*)&Stats->AllocResp.relAddrIPv4,
+    sockaddr_copy( (struct sockaddr*)&Stats->AllocResp.relAddrIPv4,
                    (struct sockaddr*)&pInst->relAddr_IPv4 );
 
-          sockaddr_copy( (struct sockaddr*)&Stats->AllocResp.relAddrIPv6,
+    sockaddr_copy( (struct sockaddr*)&Stats->AllocResp.relAddrIPv6,
                    (struct sockaddr*)&pInst->relAddr_IPv6 );
 
     Stats->channelBound = pInst->channelBound;
     if (pInst->channelBound)
     {
       Stats->channelNumber = pInst->channelBindInfo.channelNumber;
-          sockaddr_copy( (struct sockaddr*)&Stats->BoundPeerTrnspAddr,
+      sockaddr_copy( (struct sockaddr*)&Stats->BoundPeerTrnspAddr,
                      (struct sockaddr*)&pInst->channelBindInfo.peerTrnspAddr );
       /* a bound channel also creates a permission, so show this  */
       Stats->permissionsInstalled = 1;
       Stats->numberOfPeers        = 1;
-          sockaddr_copy( (struct sockaddr*)&Stats->PermPeerTrnspAddr[0],
+      sockaddr_copy( (struct sockaddr*)&Stats->PermPeerTrnspAddr[0],
                      (struct sockaddr*)&pInst->channelBindInfo.peerTrnspAddr );
     }
     else
@@ -779,7 +779,7 @@ TurnResultToStr(TurnResult_T res)
 static void
 StopAllTimers(TURN_INSTANCE_DATA* pInst)
 {
-    TurnPrint(pInst,
+  TurnPrint(pInst,
             TurnInfoCategory_Trace,
             "<TURNCLIENT:%d> StopAllTimers",
             pInst->id);
@@ -877,7 +877,7 @@ StartTimer(TURN_INSTANCE_DATA* pInst,
            TURN_SIGNAL         sig,
            uint32_t            durationMsec)
 {
-    TurnPrint(pInst,
+  TurnPrint(pInst,
             TurnInfoCategory_Trace,
             "<TURNCLIENT:%d> StartTimer(%s, %dms)",
             pInst->id,
@@ -917,7 +917,7 @@ static void
 StopTimer(TURN_INSTANCE_DATA* pInst,
           TURN_SIGNAL         sig)
 {
-    TurnPrint( pInst, TurnInfoCategory_Trace, "<TURNCLIENT:%d> StopTimer(%s)",
+  TurnPrint( pInst, TurnInfoCategory_Trace, "<TURNCLIENT:%d> StopTimer(%s)",
              pInst->id, TurnsigToStr(sig) );
 
   switch (sig)
@@ -968,13 +968,13 @@ StoreAllocateReq(TURN_INSTANCE_DATA*   pInst,
                  TurnAllocateReqStuct* pMsgIn)
 {
   /* copy whole msg */
-    memcpy( &pInst->turnAllocateReq, pMsgIn,
+  memcpy( &pInst->turnAllocateReq, pMsgIn,
           sizeof(TurnAllocateReqStuct) );
 
   /* copy crendentials to seperate area */
-    memcpy( pInst->userCredentials.stunUserName, pMsgIn->username,
+  memcpy( pInst->userCredentials.stunUserName, pMsgIn->username,
           sizeof(pInst->userCredentials.stunUserName) );
-    memcpy( pInst->userCredentials.stunPassword, pMsgIn->password,
+  memcpy( pInst->userCredentials.stunPassword, pMsgIn->password,
           sizeof(pInst->userCredentials.stunPassword) );
 }
 
@@ -982,7 +982,7 @@ static void
 StoreChannelBindReq(TURN_INSTANCE_DATA*    pInst,
                     TurnChannelBindInfo_T* pMsgIn)
 {
-    memcpy( &pInst->channelBindInfo, pMsgIn, sizeof(pInst->channelBindInfo) );
+  memcpy( &pInst->channelBindInfo, pMsgIn, sizeof(pInst->channelBindInfo) );
 }
 
 static bool
@@ -995,7 +995,7 @@ static void
 StoreCreatePermReq(TURN_INSTANCE_DATA*         pInst,
                    TurnCreatePermissionInfo_T* pMsgIn)
 {
-    memcpy( &pInst->createPermInfo, pMsgIn, sizeof(pInst->createPermInfo) );
+  memcpy( &pInst->createPermInfo, pMsgIn, sizeof(pInst->createPermInfo) );
 }
 
 static bool
@@ -1205,7 +1205,7 @@ StoreRelayAddressStd(TURN_INSTANCE_DATA* pInst,
   }
   else
   {
-      TurnPrint(pInst,
+    TurnPrint(pInst,
               TurnInfoCategory_Error,
               "<TURNCLIENT:%d> Missing Xor RelayAddress AllocResp",
               pInst->id);
@@ -1233,7 +1233,7 @@ StoreLifetime(TURN_INSTANCE_DATA* pInst,
   }
   else
   {
-      TurnPrint(pInst,
+    TurnPrint(pInst,
               TurnInfoCategory_Error,
               "<TURNCLIENT:%d> Missing Lifetime in AllocResp",
               pInst->id);
@@ -1406,7 +1406,7 @@ BuildChannelBindReq(TURN_INSTANCE_DATA* pInst,
 
   }
 
-    memcpy( &pReq->xorPeerAddress[0], &peerTrnspAddr, sizeof(StunIPAddress) );
+  memcpy( &pReq->xorPeerAddress[0], &peerTrnspAddr, sizeof(StunIPAddress) );
   pReq->xorPeerAddrEntries = 1;
 
   /* Channel No */
@@ -1459,7 +1459,7 @@ BuildCreatePermReq(TURN_INSTANCE_DATA* pInst,
 
     }
 
-      memcpy( &pReq->xorPeerAddress[i], &peerTrnspAddr, sizeof(StunIPAddress) );
+    memcpy( &pReq->xorPeerAddress[i], &peerTrnspAddr, sizeof(StunIPAddress) );
     pReq->xorPeerAddrEntries++;
   }
 
@@ -1535,7 +1535,7 @@ GetServerAddrFromAltServer(TURN_INSTANCE_DATA* pInst,
   }
   else
   {
-      TurnPrint(pInst,
+    TurnPrint(pInst,
               TurnInfoCategory_Error,
               "<TURNCLIENT:%d> Missing Alternative Server in AllocRespErr",
               pInst->id);
@@ -1577,7 +1577,7 @@ CheckRefreshRespError(TURN_INSTANCE_DATA* pInst,
   }
   else
   {
-      TurnPrint(pInst,
+    TurnPrint(pInst,
               TurnInfoCategory_Error,
               "<TURNCLIENT:%d> No error code in RefreshRespError",
               pInst->id);
@@ -1806,7 +1806,7 @@ RetransmitLastReq(TURN_INSTANCE_DATA* pInst)
 static void
 StartAllocRefreshTimer(TURN_INSTANCE_DATA* pInst)
 {
-    StartTimer(pInst,
+  StartTimer(pInst,
              TURN_SIGNAL_TimerRefreshAlloc,
              (pInst->lifetime / 2) * 1000);
 }
@@ -1814,7 +1814,7 @@ StartAllocRefreshTimer(TURN_INSTANCE_DATA* pInst)
 static void
 StartChannelBindRefreshTimer(TURN_INSTANCE_DATA* pInst)
 {
-    StartTimer(pInst,
+  StartTimer(pInst,
              TURN_SIGNAL_TimerRefreshChannel,
              TURN_REFRESH_CHANNEL_TIMER_SEC * 1000);
 }
@@ -1822,7 +1822,7 @@ StartChannelBindRefreshTimer(TURN_INSTANCE_DATA* pInst)
 static void
 StartCreatePermissionRefreshTimer(TURN_INSTANCE_DATA* pInst)
 {
-    StartTimer(pInst,
+  StartTimer(pInst,
              TURN_SIGNAL_TimerRefreshPermission,
              TURN_REFRESH_PERMISSION_TIMER_SEC * 1000);
 }
@@ -1844,7 +1844,7 @@ static void
 StartFirstRetransmitTimer(TURN_INSTANCE_DATA* pInst)
 {
   pInst->retransmits = 0;
-    StartTimer(pInst, TURN_SIGNAL_TimerRetransmit,
+  StartTimer(pInst, TURN_SIGNAL_TimerRetransmit,
              stunTimeoutList[pInst->retransmits]);
 }
 
@@ -1852,7 +1852,7 @@ StartFirstRetransmitTimer(TURN_INSTANCE_DATA* pInst)
 static void
 StartNextRetransmitTimer(TURN_INSTANCE_DATA* pInst)
 {
-    StartTimer(pInst, TURN_SIGNAL_TimerRetransmit,
+  StartTimer(pInst, TURN_SIGNAL_TimerRetransmit,
              stunTimeoutList[pInst->retransmits]);
 }
 
@@ -1946,7 +1946,7 @@ TurnClientFsm(TURN_INSTANCE_DATA* pInst,
   }
   else if (sig == TURN_SIGNAL_DeAllocate)
   {
-      CallBack(pInst, TurnResult_RelayReleaseFailed);
+    CallBack(pInst, TurnResult_RelayReleaseFailed);
   }
   else
   {
