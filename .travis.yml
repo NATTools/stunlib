@@ -18,6 +18,7 @@ addons:
     packages:
       - cmake
       - cmake-data
+      - libbsd-dev
 before_install:
   - export PATH=$HOME/.local/bin:$PATH
   - pip install cpp-coveralls --user `whoami`

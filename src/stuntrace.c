@@ -124,8 +124,7 @@ handleStunNoAnswer(struct hiutResult* result)
     result->remoteAlive = false;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId,
-                     rand(), result->currentTTL);
+    stunlib_createId(&result->currStunMsgId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
@@ -174,8 +173,8 @@ handleStunNoAnswer(struct hiutResult* result)
     {
       result->currentTTL++;
     }
-    stunlib_createId(&result->currStunMsgId,
-                     rand(), result->currentTTL);
+    stunlib_createId(&result->currStunMsgId);
+
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
@@ -207,8 +206,7 @@ handleStunRespIcmp(struct hiutResult* result,
     result->remoteAlive = true;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId,
-                     rand(), result->currentTTL);
+    stunlib_createId(&result->currStunMsgId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
@@ -245,8 +243,7 @@ handleStunRespIcmp(struct hiutResult* result,
                      false,
                      false);
 
-        stunlib_createId(&result->currStunMsgId,
-                         rand(), result->currentTTL);
+        stunlib_createId(&result->currStunMsgId);
 
         StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                    result,
@@ -312,8 +309,7 @@ handleStunRespSucsessfull(struct hiutResult* result,
     result->remoteAlive = true;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId,
-                     rand(), result->currentTTL);
+    stunlib_createId(&result->currStunMsgId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
@@ -359,7 +355,10 @@ StunStatusCallBack(void*               userCtx,
 {
   struct hiutResult* result = (struct hiutResult*)userCtx;
 
-  result->pathElement[stunCbData->ttl].gotAnswer = true;
+  if (stunCbData->ttl <= MAX_TTL)
+  {
+    result->pathElement[stunCbData->ttl].gotAnswer = true;
+  }
 
   switch (stunCbData->stunResult)
   {
@@ -408,13 +407,12 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
     return 0;
   }
   struct hiutResult* result;
-  uint32_t           len;
 
   result = &clientData->traceResult;
 
   result->currentTTL = MAX_TTL;
   result->userCtx    = userCtx;
-  stunlib_createId(&result->currStunMsgId, rand(), 1);
+  stunlib_createId(&result->currStunMsgId);
   result->stunCtx = clientData;
   /* Fill inn the hiut struct so we get something back in the CB */
   /* TODO: Fix the struct so we do not store information twice!! */
@@ -437,21 +435,19 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
   strncpy(result->username, ufrag,    sizeof(result->username) - 1);
   strncpy(result->password, password, sizeof(result->password) - 1);
 
-  len = StunClient_startSTUNTrace(result->stunCtx,
-                                  result,
-                                  toAddr,
-                                  fromAddr,
-                                  false,
-                                  result->username,
-                                  result->password,
-                                  result->currentTTL,
-                                  result->currStunMsgId,
-                                  result->sockfd,
-                                  result->sendFunc,
-                                  StunStatusCallBack,
-                                  NULL);
-  result->stunLen = len;
-
-  return len;
+  StunClient_startSTUNTrace(result->stunCtx,
+                            result,
+                            toAddr,
+                            fromAddr,
+                            false,
+                            result->username,
+                            result->password,
+                            result->currentTTL,
+                            result->currStunMsgId,
+                            result->sockfd,
+                            result->sendFunc,
+                            StunStatusCallBack,
+                            NULL);
+  return 1;
 
 }

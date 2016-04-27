@@ -63,6 +63,8 @@ typedef struct
   struct sockaddr_storage dstBaseAddr;    /* The destination seen from the
                                            * sender of the response */
   uint32_t rtt;                           /* Rtt in microseconds */
+  uint32_t reqTransCnt;
+  uint32_t respTransCnt;
   uint32_t retransmits;
   uint32_t ICMPtype;
   uint32_t ttl;
@@ -180,7 +182,7 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 STUN_SENDFUNC          sendFunc,
                                 STUNCB                 stunCbFunc,
                                 DiscussData*           discussData);
-uint32_t
+void
 StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           void*                  userCtx,
                           const struct sockaddr* serverAddr,
@@ -230,27 +232,6 @@ StunClient_cancelBindingTransaction(STUN_CLIENT_DATA* clientData,
                                     StunMsgId         transactionId);
 
 
-/********* Server handling: send STUN BIND RESP *************/
-bool
-StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
-                                       int32_t                globalSocketId,
-                                       StunMsgId              transactionId,
-                                       const char*            password,
-                                       const struct sockaddr* mappedAddr,
-                                       const struct sockaddr* dstAddr,
-                                       void*                  userData,
-                                       STUN_SENDFUNC          sendFunc,
-                                       int                    proto,
-                                       bool                   useRelay,
-                                       uint32_t               responseCode,
-                                       DiscussData*           discussData);
-
-/********** Server handling:  incoming STUN BIND REQ **********/
-bool
-StunServer_HandleStunIncomingBindReqMsg(STUN_CLIENT_DATA*       clientData,
-                                        STUN_INCOMING_REQ_DATA* pReq,
-                                        const StunMessage*      stunMsg,
-                                        bool                    fromRelay);
 
 void
 StunClient_clearStats(STUN_CLIENT_DATA* clientData);

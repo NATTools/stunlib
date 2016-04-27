@@ -116,6 +116,9 @@ extern "C" {
 #define STUN_ATTR_ICEControlled      0x8029
 #define STUN_ATTR_ICEControlling     0x802A
 
+/* Draft loss and RTT calculation TODO:update actual calues*/
+#define STUN_ATTR_TransCount        0x8072
+
 /** IP Addr family **/
 #define STUN_ADDR_IPv4Family         0x01
 #define STUN_ADDR_IPv6Family         0x02
@@ -185,6 +188,7 @@ extern "C" {
 #define STUNCLIENT_MAX_RETRANSMITS          9
 #define STUNCLIENT_RETRANSMIT_TIMEOUT_LIST      100, 200, 300, 400, 500, 500, \
   500, 500, 500                                                                              /*
+                                                                                              *
                                                                                               *
                                                                                               *
                                                                                               *
@@ -361,6 +365,14 @@ typedef struct
   uint16_t downMaxBandwidth;
 }
 StunAtrNetworkStatus;
+
+typedef struct
+{
+  uint16_t reserved;
+  uint8_t  reqCnt;
+  uint8_t  respCnt;
+}
+StunAtrTransCount;
 
 typedef struct
 {
@@ -542,7 +554,8 @@ typedef struct
   bool                        hasCiscoNetFeedResp;
   StunAtrCiscoNetworkFeedback ciscoNetFeedResp;
 
-
+  bool              hasTransCount;
+  StunAtrTransCount transCount;
 
   /* No value, only flaged */
   bool hasUseCandidate;
@@ -574,6 +587,11 @@ typedef void (* STUN_ERR_FUNC)(const char* fmt,
 /**********************
 ***** API Funcs ******
 **********************/
+
+/* transaction id compare */
+bool
+stunlib_transIdIsEqual(const StunMsgId* a,
+                       const StunMsgId* b);
 
 /***********************************************/
 /*************  Decode functions ***************/
@@ -846,9 +864,8 @@ stunlib_printBuffer(FILE*          stream,
 
 
 void
-stunlib_createId(StunMsgId*    pId,
-                 long          randval,
-                 unsigned char retries);
+stunlib_createId(StunMsgId* pId);
+
 bool
 stunlib_addRealm(StunMessage* stunMsg,
                  const char*  realm,

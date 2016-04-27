@@ -14,7 +14,7 @@ extern "C" {
 
 /* make sure both the following timers are < 5 minutes */
 #define TURN_REFRESH_CHANNEL_TIMER_SEC     (3 * 60)  /* 3 min (spec. is 10 min)
-                                                      **/
+                                                     **/
 #define TURN_REFRESH_PERMISSION_TIMER_SEC  (4 * 60)  /* 4 min (spec. is 5 min)
                                                       * */
 
@@ -103,19 +103,21 @@ struct TURN_INSTANCE_DATA
   unsigned long  id;
   TURN_INFO_FUNC infoFunc;
 
-  TURN_STATE            state;
-  bool                  inUse;
-  TurnAllocateReqStuct  turnAllocateReq;
-  StunMsgId             StunReqTransId;                          /* transaction
-                                                                  *id of request
+  TURN_STATE           state;
+  bool                 inUse;
+  TurnAllocateReqStuct turnAllocateReq;
+  StunMsgId            StunReqTransId;                           /* transaction
+                                                                  * id of
+                                                                  *request
                                                                   **/
-  StunMsgId             PrevRespTransId;                         /* transaction
-                                                                  *id of last
-                                                                  *received */
-  uint8_t               stunReqMsgBuf[STUN_MAX_PACKET_SIZE];     /* encoded STUN
-                                                                  *request    */
-  int                   stunReqMsgBufLen;                        /* of encoded
-                                                                  *STUN request
+  StunMsgId PrevRespTransId;                                     /* transaction
+                                                                  * id of last
+                                                                  * received */
+  uint8_t stunReqMsgBuf[STUN_MAX_PACKET_SIZE];                   /* encoded STUN
+                                                                  * request
+                                                                  *   */
+  int stunReqMsgBufLen;                                          /* of encoded
+                                                                  * STUN request
                                                                   **/
   bool                  pendingChannelBind;
   STUN_USER_CREDENTIALS userCredentials;
