@@ -883,7 +883,7 @@ RetransmitLastReq(STUN_TRANSACTION_DATA*   trans,
                                              NULL);
 
   }
-  gettimeofday(&trans->start[trans->retransmits +1], NULL);
+  gettimeofday(&trans->start[trans->retransmits], NULL);
   trans->stunBindReq.sendFunc(trans->client->userCtx,
                               trans->stunBindReq.sockhandle,
                               stunReqMsgBuf,
