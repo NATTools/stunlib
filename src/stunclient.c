@@ -431,7 +431,17 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
                                 &trans->stunBindReq.transactionId) )
     {
       StunRespStruct m;
-      gettimeofday(&trans->stop[trans->retransmits], NULL);
+      /* What timer to stop? */
+      uint32_t idx;
+      if (msg->hasTransCount)
+      {
+        idx = msg->transCount.reqCnt - 1;
+      }
+      else
+      {
+        idx = trans->retransmits;
+      }
+      gettimeofday(&trans->stop[idx], NULL);
       memcpy( &m.stunRespMessage, msg, sizeof(m.stunRespMessage) );
       sockaddr_copy( (struct sockaddr*)&m.srcAddr, srcAddr );
       StunClientMain(clientData, i, StunMsgToInternalStunSig(msg), (void*)&m);
