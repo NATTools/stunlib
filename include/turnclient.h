@@ -114,8 +114,8 @@ TurnStats_T;
 
 /* Defines how a user of turn sends data on e.g. socket */
 typedef void (* TURN_SEND_FUNC)(const uint8_t*         buffer,      /* ptr to
-                                                                     * buffer to
-                                                                     * send */
+                                                                    * buffer to
+                                                                    * send */
                                 size_t                 bufLen,      /* length of
                                                                      * send
                                                                      * buffer */

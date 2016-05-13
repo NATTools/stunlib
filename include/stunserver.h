@@ -23,8 +23,8 @@ extern "C" {
                                   uint8_t reqTrnspCnt,
                                   uint8_t respTrnspCnt,
                                   uint16_t response,
-                                  uint32_t responseCode,
-                                  DiscussData *           discussData);
+                                  uint32_t responseCode);
+
 /********* Server handling: send STUN BIND RESP *************/
   bool
     StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA *      clientData,
@@ -39,8 +39,7 @@ extern "C" {
                                            STUN_SENDFUNC sendFunc,
                                            int proto,
                                            bool useRelay,
-                                           uint32_t responseCode,
-                                           DiscussData *           discussData);
+                                           uint32_t responseCode);
 
 /********** Server handling:  incoming STUN BIND REQ **********/
   bool

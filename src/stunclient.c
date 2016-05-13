@@ -189,27 +189,6 @@ BuildStunBindReq(STUN_TRANSACTION_DATA* trans,
     stunReqMsg->ttl.ttl = trans->stunBindReq.ttl;
   }
 
-
-  /*Adding DISCUSS attributes if present*/
-  if (trans->stunBindReq.discussData != NULL)
-  {
-    stunReqMsg->hasStreamType   = true;
-    stunReqMsg->streamType.type =
-      trans->stunBindReq.discussData->streamType;
-    stunReqMsg->streamType.interactivity =
-      trans->stunBindReq.discussData->interactivity;
-
-    stunReqMsg->hasNetworkStatus    = true;
-    stunReqMsg->networkStatus.flags =
-      trans->stunBindReq.discussData->networkStatus_flags;
-    stunReqMsg->networkStatus.nodeCnt =
-      trans->stunBindReq.discussData->networkStatus_nodeCnt;
-    stunReqMsg->networkStatus.upMaxBandwidth =
-      trans->stunBindReq.discussData->networkStatus_upMaxBandwidth;
-    stunReqMsg->networkStatus.downMaxBandwidth =
-      trans->stunBindReq.discussData->networkStatus_downMaxBandwidth;
-  }
-
   if (trans->stunBindReq.addSoftware)
   {
     stunlib_addSoftware(stunReqMsg, SoftwareVersionStr, STUN_DFLT_PAD);
@@ -317,17 +296,9 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 const struct sockaddr* baseAddr,
                                 int                    proto,
                                 bool                   useRelay,
-                                const char*            ufrag,
-                                const char*            password,
-                                uint32_t               peerPriority,
-                                bool                   useCandidate,
-                                bool                   iceControlling,
-                                uint64_t               tieBreaker,
-                                StunMsgId              transactionId,
-                                uint32_t               sockhandle,
+                                TransactionAttributes* transAttr,
                                 STUN_SENDFUNC          sendFunc,
-                                STUNCB                 stunCbFunc,
-                                DiscussData*           discussData)
+                                STUNCB                 stunCbFunc)
 {
   StunBindReqStruct m;
 
@@ -340,19 +311,18 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
   m.userCtx = userCtx;
   sockaddr_copy( (struct sockaddr*)&m.serverAddr, serverAddr );
   sockaddr_copy( (struct sockaddr*)&m.baseAddr,   baseAddr );
-  strncpy(m.ufrag,    ufrag,    sizeof(m.ufrag) - 1);
-  strncpy(m.password, password, sizeof(m.password) - 1);
+  strncpy(m.ufrag,    transAttr->username, sizeof(m.ufrag) - 1);
+  strncpy(m.password, transAttr->password, sizeof(m.password) - 1);
   m.proto          = proto;
   m.useRelay       = useRelay;
-  m.peerPriority   = peerPriority;
-  m.useCandidate   = useCandidate;
-  m.iceControlling = iceControlling;
-  m.tieBreaker     = tieBreaker;
-  m.transactionId  = transactionId;
-  m.sockhandle     = sockhandle;
+  m.peerPriority   = transAttr->peerPriority;
+  m.useCandidate   = transAttr->useCandidate;
+  m.iceControlling = transAttr->iceControlling;
+  m.tieBreaker     = transAttr->tieBreaker;
+  m.transactionId  = transAttr->transactionId;
+  m.sockhandle     = transAttr->sockhandle;
   m.sendFunc       = sendFunc;
 
-  m.discussData = discussData;
   m.addSoftware = true;
   /*TODO: Let app overide this */
   m.addTransCnt = true;
@@ -371,15 +341,10 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           const struct sockaddr* serverAddr,
                           const struct sockaddr* baseAddr,
                           bool                   useRelay,
-                          const char*            ufrag,
-                          const char*            password,
                           uint8_t                ttl,
-                          StunMsgId              transactionId,
-                          uint32_t               sockhandle,
+                          TransactionAttributes* transAttr,
                           STUN_SENDFUNC          sendFunc,
-                          STUNCB                 stunCbFunc,
-                          DiscussData*           discussData)          /*NULL if
-                                                                        * none*/
+                          STUNCB                 stunCbFunc)
 
 {
   StunBindReqStruct     m;
@@ -390,21 +355,24 @@ StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
   m.userCtx = userCtx;
   sockaddr_copy( (struct sockaddr*)&m.serverAddr, serverAddr );
   sockaddr_copy( (struct sockaddr*)&m.baseAddr,   baseAddr );
-  m.useRelay = useRelay;
-  strncpy(m.ufrag,    ufrag,    sizeof(m.ufrag) - 1);
-  strncpy(m.password, password, sizeof(m.password) - 1);
+  strncpy(m.ufrag,    transAttr->username, sizeof(m.ufrag) - 1);
+  strncpy(m.password, transAttr->password, sizeof(m.password) - 1);
+  m.useRelay       = useRelay;
+  m.ttl            = ttl;
+  m.peerPriority   = transAttr->peerPriority;
+  m.useCandidate   = transAttr->useCandidate;
+  m.iceControlling = transAttr->iceControlling;
+  m.tieBreaker     = transAttr->tieBreaker;
+  m.transactionId  = transAttr->transactionId;
+  m.sockhandle     = transAttr->sockhandle;
+  m.sendFunc       = sendFunc;
 
-  m.ttl           = ttl;
-  m.transactionId = transactionId;
-  m.sockhandle    = sockhandle;
-  m.sendFunc      = sendFunc;
-  m.discussData   = discussData;
-  m.addSoftware   = false;
+  m.sendFunc    = sendFunc;
+  m.addSoftware = false;
   /* callback and data (owned by caller) */
   m.stunCbFunc  = stunCbFunc;
   m.stuntrace   = true;
   m.addTransCnt = false;
-
 
   StoreStunBindReq(&trans, &m);
   BuildStunBindReq(&trans, &stunMsg);
@@ -478,7 +446,8 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
     {
       STUN_TRANSACTION_DATA* trans = &clientData->data[i];
       if ( trans->inUse &&
-           stunlib_transIdIsEqual(&clientData->traceResult.currStunMsgId,
+           stunlib_transIdIsEqual(&clientData->traceResult.transAttr.
+                                  transactionId,
                                   &trans->stunBindReq.transactionId) )
       {
         StunRespStruct m;

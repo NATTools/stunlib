@@ -171,31 +171,21 @@ StunClient_startBindTransaction(STUN_CLIENT_DATA*      clientData,
                                 const struct sockaddr* baseAddr,
                                 int                    proto,
                                 bool                   useRelay,
-                                const char*            ufrag,
-                                const char*            password,
-                                uint32_t               peerPriority,
-                                bool                   useCandidate,
-                                bool                   iceControlling,
-                                uint64_t               tieBreaker,
-                                StunMsgId              transactionId,
-                                uint32_t               sockhandle,
+                                TransactionAttributes* transAttr,
                                 STUN_SENDFUNC          sendFunc,
-                                STUNCB                 stunCbFunc,
-                                DiscussData*           discussData);
+                                STUNCB                 stunCbFunc);
+
 void
 StunClient_startSTUNTrace(STUN_CLIENT_DATA*      clientData,
                           void*                  userCtx,
                           const struct sockaddr* serverAddr,
                           const struct sockaddr* baseAddr,
                           bool                   useRelay,
-                          const char*            ufrag,
-                          const char*            password,
                           uint8_t                ttl,
-                          StunMsgId              transactionId,
-                          uint32_t               sockhandle,
+                          TransactionAttributes* transAttr,
                           STUN_SENDFUNC          sendFunc,
-                          STUNCB                 stunCbFunc,
-                          DiscussData*           discussData);
+                          STUNCB                 stunCbFunc);
+
 /*
  * This function must be called by the application every N msec. N must be same
  * as in StunClientBind_Init(instances, N)

@@ -76,14 +76,10 @@ resartIfNotDone(struct hiutResult* result)
                                (struct sockaddr*)&result->remoteAddr,
                                (struct sockaddr*)&result->localAddr,
                                false,
-                               result->username,
-                               result->password,
                                result->currentTTL,
-                               result->currStunMsgId,
-                               result->sockfd,
+                               &result->transAttr,
                                result->sendFunc,
-                               StunStatusCallBack,
-                               NULL );
+                               StunStatusCallBack );
 
   }
 }
@@ -124,21 +120,18 @@ handleStunNoAnswer(struct hiutResult* result)
     result->remoteAlive = false;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId);
+    stunlib_createId(&result->transAttr.transactionId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
                                (struct sockaddr*)&result->localAddr,
                                false,
-                               result->username,
-                               result->password,
                                result->currentTTL,
-                               result->currStunMsgId,
-                               result->sockfd,
+                               &result->transAttr,
                                result->sendFunc,
-                               StunStatusCallBack,
-                               NULL );
+                               StunStatusCallBack );
+
     return;
   }
   /* Hov many no answer in a row? */
@@ -173,21 +166,17 @@ handleStunNoAnswer(struct hiutResult* result)
     {
       result->currentTTL++;
     }
-    stunlib_createId(&result->currStunMsgId);
+    stunlib_createId(&result->transAttr.transactionId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
                                (struct sockaddr*)&result->localAddr,
                                false,
-                               result->username,
-                               result->password,
                                result->currentTTL,
-                               result->currStunMsgId,
-                               result->sockfd,
+                               &result->transAttr,
                                result->sendFunc,
-                               StunStatusCallBack,
-                               NULL );
+                               StunStatusCallBack );
   }
 }
 
@@ -206,21 +195,17 @@ handleStunRespIcmp(struct hiutResult* result,
     result->remoteAlive = true;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId);
+    stunlib_createId(&result->transAttr.transactionId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
                                (struct sockaddr*)&result->localAddr,
                                false,
-                               result->username,
-                               result->password,
                                result->currentTTL,
-                               result->currStunMsgId,
-                               result->sockfd,
+                               &result->transAttr,
                                result->sendFunc,
-                               StunStatusCallBack,
-                               NULL );
+                               StunStatusCallBack );
     return;
   }
   if ( isTimeExceeded(ICMPtype, srcAddr->sa_family) )
@@ -243,21 +228,17 @@ handleStunRespIcmp(struct hiutResult* result,
                      false,
                      false);
 
-        stunlib_createId(&result->currStunMsgId);
+        stunlib_createId(&result->transAttr.transactionId);
 
         StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                    result,
                                    (struct sockaddr*)&result->remoteAddr,
                                    (struct sockaddr*)&result->localAddr,
                                    false,
-                                   result->username,
-                                   result->password,
                                    result->currentTTL,
-                                   result->currStunMsgId,
-                                   result->sockfd,
+                                   &result->transAttr,
                                    result->sendFunc,
-                                   StunStatusCallBack,
-                                   NULL );
+                                   StunStatusCallBack );
         return;
       }
     }
@@ -309,21 +290,17 @@ handleStunRespSucsessfull(struct hiutResult* result,
     result->remoteAlive = true;
     result->currentTTL  = 1;
 
-    stunlib_createId(&result->currStunMsgId);
+    stunlib_createId(&result->transAttr.transactionId);
 
     StunClient_startSTUNTrace( (STUN_CLIENT_DATA*)result->stunCtx,
                                result,
                                (struct sockaddr*)&result->remoteAddr,
                                (struct sockaddr*)&result->localAddr,
                                false,
-                               result->username,
-                               result->password,
                                result->currentTTL,
-                               result->currStunMsgId,
-                               result->sockfd,
+                               &result->transAttr,
                                result->sendFunc,
-                               StunStatusCallBack,
-                               NULL );
+                               StunStatusCallBack );
     return;
   }
 
@@ -412,7 +389,7 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
 
   result->currentTTL = MAX_TTL;
   result->userCtx    = userCtx;
-  stunlib_createId(&result->currStunMsgId);
+  stunlib_createId(&result->transAttr.transactionId);
   result->stunCtx = clientData;
   /* Fill inn the hiut struct so we get something back in the CB */
   /* TODO: Fix the struct so we do not store information twice!! */
@@ -430,24 +407,22 @@ StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
   result->num_traces           = 1;
   result->traceCb              = traceCbFunc;
   result->sendFunc             = sendFunc;
-  result->sockfd               = sockhandle;
+  result->transAttr.sockhandle = sockhandle;
 
-  strncpy(result->username, ufrag,    sizeof(result->username) - 1);
-  strncpy(result->password, password, sizeof(result->password) - 1);
+  strncpy(result->transAttr.username, ufrag,
+          sizeof(result->transAttr.username) - 1);
+  strncpy(result->transAttr.password, password,
+          sizeof(result->transAttr.password) - 1);
 
   StunClient_startSTUNTrace(result->stunCtx,
                             result,
                             toAddr,
                             fromAddr,
                             false,
-                            result->username,
-                            result->password,
                             result->currentTTL,
-                            result->currStunMsgId,
-                            result->sockfd,
+                            &result->transAttr,
                             result->sendFunc,
-                            StunStatusCallBack,
-                            NULL);
+                            StunStatusCallBack);
   return 1;
 
 }

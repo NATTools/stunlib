@@ -71,7 +71,6 @@ typedef struct {
   uint32_t                sockhandle;
   STUN_SENDFUNC           sendFunc;
   STUNCB                  stunCbFunc;
-  DiscussData*            discussData;    /*NULL allowed if none present */
   bool                    addSoftware;
   bool                    stuntrace;
   bool                    addTransCnt;
@@ -127,8 +126,7 @@ typedef struct
   /* uint32_t ttl; */
 
   /* DISCUSS */
-  bool        hasDiscuss;
-  DiscussData discussData;
+  bool hasDiscuss;
 
   struct StunClientStats stats;
   STUN_CLIENT_DATA*      client;

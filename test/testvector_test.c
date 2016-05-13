@@ -846,7 +846,7 @@ CTEST(testvector, SendIndication)
                               message) ) );
 }
 
-
+#if 0
 CTEST(testvector, discuss_encode_decode)
 {
   StunMessage   stunMsg;
@@ -934,66 +934,8 @@ CTEST(testvector, discuss_encode_decode)
     discussData.networkStatusResp_downMaxBandwidth);
 
 }
+#endif
 
-
-
-CTEST(testvector, cisco_network_feedback_enc_dec)
-{
-  StunMessage   stunMsg;
-  unsigned char stunBuf[STUN_MAX_PACKET_SIZE];
-
-  uint32_t first_val  = 42;
-  uint32_t second_val = 0x0;
-  uint32_t third_val  = 5678923;
-
-
-  memset( &stunMsg, 0, sizeof(StunMessage) );
-  stunMsg.msgHdr.msgType = STUN_MSG_AllocateRequestMsg;
-  memcpy(&stunMsg.msgHdr.id.octet,&idOctet,12);
-
-  /* After Integrity attribute */
-  stunMsg.hasCiscoNetFeed     = true;
-  stunMsg.ciscoNetFeed.first  = first_val;
-  stunMsg.ciscoNetFeed.second = second_val;
-  stunMsg.ciscoNetFeed.third  = third_val;
-
-  /* This is Integrity protected */
-  stunMsg.hasCiscoNetFeedResp     = true;
-  stunMsg.ciscoNetFeedResp.first  = first_val;
-  stunMsg.ciscoNetFeedResp.second = second_val;
-  stunMsg.ciscoNetFeedResp.third  = third_val;
-
-  ASSERT_TRUE( stunlib_encodeMessage(&stunMsg,
-                                     stunBuf,
-                                     sizeof(stunBuf),
-                                     (unsigned char*)password,
-                                     strlen(password),
-                                     NULL) );
-
-  memset( &stunMsg, 0, sizeof(StunMessage) );
-
-  ASSERT_TRUE( stunlib_DecodeMessage(stunBuf,
-                                     sizeof(stunBuf),
-                                     &stunMsg,
-                                     NULL,
-                                     NULL) );
-
-  ASSERT_TRUE( stunlib_checkIntegrity( stunBuf,
-                                       sizeof(stunBuf),
-                                       &stunMsg,
-                                       (uint8_t*)password,
-                                       sizeof(password) ) );
-
-  ASSERT_TRUE(stunMsg.hasCiscoNetFeed);
-  ASSERT_TRUE(stunMsg.ciscoNetFeed.first == first_val);
-  ASSERT_TRUE(stunMsg.ciscoNetFeed.second == second_val);
-  ASSERT_TRUE(stunMsg.ciscoNetFeed.third == third_val);
-
-  ASSERT_TRUE(stunMsg.hasCiscoNetFeedResp);
-  ASSERT_TRUE(stunMsg.ciscoNetFeedResp.first == first_val);
-  ASSERT_TRUE(stunMsg.ciscoNetFeedResp.second == second_val);
-  ASSERT_TRUE(stunMsg.ciscoNetFeedResp.third == third_val);
-}
 
 CTEST(testvector, dont_crash_if_atrLen_bogus_on_errors_messages)
 {

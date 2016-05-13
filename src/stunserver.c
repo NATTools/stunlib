@@ -13,8 +13,7 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
                               uint8_t                reqTrnspCnt,
                               uint8_t                respTrnspCnt,
                               uint16_t               response,
-                              uint32_t               responseCode,
-                              DiscussData*           discussData)
+                              uint32_t               responseCode)
 {
   StunIPAddress mappedAddr;
 
@@ -65,28 +64,6 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
   stunMsg->hasXorMappedAddress = true;
   stunMsg->xorMappedAddress    = mappedAddr;
 
-  if (discussData != NULL)
-  {
-    stunMsg->hasStreamType            = true;
-    stunMsg->streamType.type          = discussData->streamType;
-    stunMsg->streamType.interactivity = discussData->interactivity;
-
-    stunMsg->hasNetworkStatus               = true;
-    stunMsg->networkStatus.flags            = 0;
-    stunMsg->networkStatus.nodeCnt          = 0;
-    stunMsg->networkStatus.upMaxBandwidth   = 0;
-    stunMsg->networkStatus.downMaxBandwidth = 0;
-
-    stunMsg->hasNetworkStatusResp    = true;
-    stunMsg->networkStatusResp.flags =
-      discussData->networkStatusResp_flags;
-    stunMsg->networkStatusResp.nodeCnt =
-      discussData->networkStatusResp_nodeCnt;
-    stunMsg->networkStatusResp.upMaxBandwidth =
-      discussData->networkStatusResp_upMaxBandwidth;
-    stunMsg->networkStatusResp.downMaxBandwidth =
-      discussData->networkStatusResp_downMaxBandwidth;
-  }
   if (responseCode != 200)
   {
     stunMsg->hasErrorCode         = true;
@@ -172,8 +149,7 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                        STUN_SENDFUNC          sendFunc,
                                        int                    proto,
                                        bool                   useRelay,
-                                       uint32_t               responseCode,
-                                       DiscussData*           discussData)
+                                       uint32_t               responseCode)
 {
   StunMessage stunRespMsg;
 
@@ -186,8 +162,7 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                      (responseCode ==
                                       200) ? STUN_MSG_BindResponseMsg :
                                      STUN_MSG_BindErrorResponseMsg,
-                                     responseCode,
-                                     discussData) )
+                                     responseCode) )
   {
     /* encode and send */
     if ( SendConnectivityBindResponse(clientData,
