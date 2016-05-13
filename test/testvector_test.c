@@ -846,54 +846,38 @@ CTEST(testvector, SendIndication)
                               message) ) );
 }
 
-#if 0
-CTEST(testvector, discuss_encode_decode)
+
+CTEST(testvector, enf_encode_decode)
 {
   StunMessage   stunMsg;
   unsigned char stunBuf[STUN_MAX_PACKET_SIZE];
-  DiscussData   discussData;
-
-  discussData.streamType    = 0x004;
-  discussData.interactivity = 0x01;
-
-  discussData.bandwidthUsage_average = 34;
-  discussData.bandwidthUsage_max     = 56;
-
-  discussData.networkStatus_flags            = 0;
-  discussData.networkStatus_nodeCnt          = 0;
-  discussData.networkStatus_tbd              = 0;
-  discussData.networkStatus_upMaxBandwidth   = 0;
-  discussData.networkStatus_downMaxBandwidth = 0;
-
+  uint8_t       type   = 0x04;
+  uint8_t       tbd    = 0x00;
+  uint16_t      bw_max = 4096;
   memset( &stunMsg, 0, sizeof(StunMessage) );
   stunMsg.msgHdr.msgType = STUN_MSG_AllocateRequestMsg;
   memcpy(&stunMsg.msgHdr.id.octet,&idOctet,12);
 
-  stunMsg.hasStreamType            = true;
-  stunMsg.streamType.type          = discussData.streamType;
-  stunMsg.streamType.interactivity = discussData.interactivity;
-
-  stunMsg.hasBandwidthUsage      = true;
-  stunMsg.bandwidthUsage.average = discussData.bandwidthUsage_average;
-  stunMsg.bandwidthUsage.max     = discussData.bandwidthUsage_max;
-
+  /* Flow Descr */
+  stunMsg.hasEnfFlowDescription           = true;
+  stunMsg.enfFlowDescription.type         = type;
+  stunMsg.enfFlowDescription.tbd          = tbd;
+  stunMsg.enfFlowDescription.bandwidthMax = bw_max;
+  stunMsg.enfFlowDescription.pad          = 0x00;
 
 
-  stunMsg.hasNetworkStatus               = true;
-  stunMsg.networkStatus.flags            = 0;
-  stunMsg.networkStatus.nodeCnt          = 0;
-  stunMsg.networkStatus.upMaxBandwidth   = 0;
-  stunMsg.networkStatus.downMaxBandwidth = 0;
+  stunMsg.hasEnfNetworkStatus               = true;
+  stunMsg.enfNetworkStatus.flags            = 0x1;
+  stunMsg.enfNetworkStatus.nodeCnt          = 4;
+  stunMsg.enfNetworkStatus.upMaxBandwidth   = 34;
+  stunMsg.enfNetworkStatus.downMaxBandwidth = 3456;
 
-  stunMsg.hasNetworkStatusResp    = true;
-  stunMsg.networkStatusResp.flags =
-    discussData.networkStatusResp_flags;
-  stunMsg.networkStatusResp.nodeCnt =
-    discussData.networkStatusResp_nodeCnt;
-  stunMsg.networkStatusResp.upMaxBandwidth =
-    discussData.networkStatusResp_upMaxBandwidth;
-  stunMsg.networkStatusResp.downMaxBandwidth =
-    discussData.networkStatusResp_downMaxBandwidth;
+  stunMsg.hasEnfNetworkStatusResp               = true;
+  stunMsg.enfNetworkStatusResp.flags            = 0x5;
+  stunMsg.enfNetworkStatusResp.nodeCnt          = 7;
+  stunMsg.enfNetworkStatusResp.upMaxBandwidth   = 4098;
+  stunMsg.enfNetworkStatusResp.downMaxBandwidth = 6789;
+
 
   stunlib_encodeMessage(&stunMsg,
                         stunBuf,
@@ -914,27 +898,27 @@ CTEST(testvector, discuss_encode_decode)
                                        (uint8_t*)password,
                                        sizeof(password) ) );
 
+  ASSERT_TRUE(stunMsg.hasEnfFlowDescription);
+  ASSERT_TRUE(stunMsg.enfFlowDescription.type == type);
+  ASSERT_TRUE(stunMsg.enfFlowDescription.tbd == tbd);
+  ASSERT_TRUE(stunMsg.enfFlowDescription.bandwidthMax == bw_max);
+  ASSERT_TRUE(stunMsg.enfFlowDescription.pad == 0);
 
-  ASSERT_TRUE(stunMsg.streamType.type == discussData.streamType);
-  ASSERT_TRUE(stunMsg.streamType.interactivity == discussData.interactivity);
+  ASSERT_TRUE(stunMsg.hasEnfNetworkStatus);
+  ASSERT_TRUE(stunMsg.enfNetworkStatus.flags            == 0x1);
+  ASSERT_TRUE(stunMsg.enfNetworkStatus.nodeCnt          == 4);
+  ASSERT_TRUE(stunMsg.enfNetworkStatus.upMaxBandwidth   == 34);
+  ASSERT_TRUE(stunMsg.enfNetworkStatus.downMaxBandwidth == 3456);
 
-  ASSERT_TRUE(
-    stunMsg.bandwidthUsage.average == discussData.bandwidthUsage_average);
-  ASSERT_TRUE(stunMsg.bandwidthUsage.max == discussData.bandwidthUsage_max);
+  ASSERT_TRUE(stunMsg.hasEnfNetworkStatusResp);
+  ASSERT_TRUE(stunMsg.enfNetworkStatusResp.flags            == 0x5);
+  ASSERT_TRUE(stunMsg.enfNetworkStatusResp.nodeCnt          == 7);
+  ASSERT_TRUE(stunMsg.enfNetworkStatusResp.upMaxBandwidth   == 4098);
+  ASSERT_TRUE(stunMsg.enfNetworkStatusResp.downMaxBandwidth == 6789);
 
-  ASSERT_TRUE(
-    stunMsg.networkStatusResp.flags == discussData.networkStatusResp_flags);
-  ASSERT_TRUE(
-    stunMsg.networkStatusResp.nodeCnt == discussData.networkStatusResp_nodeCnt);
-  ASSERT_TRUE(
-    stunMsg.networkStatusResp.upMaxBandwidth ==
-    discussData.networkStatusResp_upMaxBandwidth);
-  ASSERT_TRUE(
-    stunMsg.networkStatusResp.downMaxBandwidth ==
-    discussData.networkStatusResp_downMaxBandwidth);
 
 }
-#endif
+
 
 
 CTEST(testvector, dont_crash_if_atrLen_bogus_on_errors_messages)

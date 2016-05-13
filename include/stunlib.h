@@ -186,6 +186,7 @@ extern "C" {
                                                                                               *
                                                                                               *
                                                                                               *
+                                                                                              *
                                                                                               *msec
                                                                                               **/
 #define STUNCLIENT_DFLT_TICK_TIMER_MS            50
@@ -412,13 +413,10 @@ typedef struct
   bool     iceControlling;
   uint64_t tieBreaker;
   /* ENF */
-  uint16_t streamType;
-  uint8_t  interactivity;
-  uint8_t  networkStatus_flags;
-  uint8_t  networkStatus_nodeCnt;
-  uint16_t networkStatus_tbd;
-  uint16_t networkStatus_upMaxBandwidth;
-  uint16_t networkStatus_downMaxBandwidth;
+  bool                      addEnf;
+  StunAtrEnfFlowDescription enfFlowDescription;
+  StunAtrEnfNetworkStatus   enfNetworkStatus;
+  StunAtrEnfNetworkStatus   enfNetworkStatusResp;
 
   /* MISC */
 
@@ -531,7 +529,7 @@ typedef struct
 
   /*Integrity protected*/
   bool                    hasEnfNetworkStatusResp;
-  StunAtrEnfNetworkStatus networkStatusResp;
+  StunAtrEnfNetworkStatus enfNetworkStatusResp;
 
   bool              hasTransCount;
   StunAtrTransCount transCount;

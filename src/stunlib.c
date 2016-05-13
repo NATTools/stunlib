@@ -881,7 +881,6 @@ stunEncodeEnfFlowDescription(StunAtrEnfFlowDescription* pStreamType,
     return false;
   }
   uint8_t typeAndTbd = pStreamType->type << 4;
-
   write_16(pBuf, STUN_ATTR_EnfFlowDescription);   /* Attr type */
 
   write_16(pBuf, 3);                    /* Length */
@@ -2438,7 +2437,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
       }
       else
       {
-        if ( !stunDecodeEnfNetworkStatus(&message->networkStatusResp,
+        if ( !stunDecodeEnfNetworkStatus(&message->enfNetworkStatusResp,
                                          &pCurrPtr,
                                          &restlen) )
         {
@@ -3106,7 +3105,7 @@ stunlib_encodeMessage(StunMessage*   message,
   }
 
   if ( message->hasEnfNetworkStatusResp &&
-       !stunEncodeEnfNetworkStatus(&message->networkStatusResp,
+       !stunEncodeEnfNetworkStatus(&message->enfNetworkStatusResp,
                                    &pCurrPtr,
                                    &restlen) )
   {

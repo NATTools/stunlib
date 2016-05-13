@@ -49,6 +49,9 @@ int lastTranspRespCnt;
 int lastTranspReqCnt;
 int lastRTT;
 
+uint8_t  lastEnfFlowType;
+uint16_t lastEnfFlowMaxBw;
+
 CTEST_DATA(data)
 {
   int a;
@@ -116,6 +119,11 @@ SendRawStun(void*                  ctx,
     lastReqCnt = stunMsg.transCount.reqCnt;
     /* lastTranspRespCnt = stunMsg.transCount.respCnt; */
   }
+  if (stunMsg.hasEnfFlowDescription)
+  {
+    lastEnfFlowType  = stunMsg.enfFlowDescription.type;
+    lastEnfFlowMaxBw = stunMsg.enfFlowDescription.bandwidthMax;
+  }
   /* printf("Sendto: '%s'\n", addr_str); */
 
 }
@@ -164,7 +172,7 @@ StartBindTransaction(int n)
 
 
 static int
-StartDiscussBindTransaction(int n)
+StartENFBindTransaction(int n)
 {
   n = 0;   /* hardcoded for now...  TODO: fixme */
 
@@ -181,16 +189,9 @@ StartDiscussBindTransaction(int n)
   transAttr.iceControlling = false;
   transAttr.tieBreaker     = 4567;
 
-  transAttr.streamType    = 0x004;
-  transAttr.interactivity = 0x01;
-
-  transAttr.networkStatus_flags            = 0;
-  transAttr.networkStatus_nodeCnt          = 0;
-  transAttr.networkStatus_tbd              = 0;
-  transAttr.networkStatus_upMaxBandwidth   = 0;
-  transAttr.networkStatus_downMaxBandwidth = 0;
-
-
+  transAttr.addEnf                          = true;
+  transAttr.enfFlowDescription.type         = 0x04;
+  transAttr.enfFlowDescription.bandwidthMax = 4096;
 
   /* kick off stun */
   return StunClient_startBindTransaction(stunInstance,
@@ -200,7 +201,7 @@ StartDiscussBindTransaction(int n)
                                          0,
                                          false,
                                          &transAttr,
-                                         NULL,
+                                         SendRawStun,
                                          StunStatusCallBack);
 }
 
@@ -505,13 +506,19 @@ CTEST(stunclient, DumpStats)
   StunClient_free(stunInstance);
 }
 
-CTEST(stunclient, Send_Discuss)
+CTEST(stunclient, Send_Enf)
 {
   StunClient_Alloc(&stunInstance);
+  StunClient_RegisterLogger(stunInstance,
+                            stundbg,
+                            NULL);
   sockaddr_initFromString( (struct sockaddr*)&stunServerAddr,
                            "193.200.93.152:3478" );
-  StartDiscussBindTransaction(0);
-  StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
+  StartENFBindTransaction(0);
+  /* StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS); */
+  ASSERT_TRUE(lastEnfFlowType == 0x04);
+  ASSERT_TRUE(lastEnfFlowMaxBw == 4096);
+
 
   SimBindSuccessResp(runningAsIPv6, true);
   ASSERT_TRUE(stunResult == StunResult_BindOk);
