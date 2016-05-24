@@ -17,13 +17,18 @@ extern "C" {
 #endif
 
   bool
-    CreateConnectivityBindingResp(StunMessage *           stunMsg,
-                                  StunMsgId transactionId,
-                                  const struct sockaddr* mappedSockAddr,
-                                  uint8_t reqTrnspCnt,
-                                  uint8_t respTrnspCnt,
-                                  uint16_t response,
-                                  uint32_t responseCode);
+  CreateConnectivityBindingResp(StunMessage*           stunMsg,
+                                StunMsgId              transactionId,
+                                const struct sockaddr* mappedSockAddr,
+                                uint8_t                reqTrnspCnt,
+                                uint8_t                respTrnspCnt,
+                                uint8_t                enf_flags,
+                                uint8_t                enf_nodeCnt,
+                                uint16_t               enf_upMaxBandwidth,
+                                uint16_t               enf_downMaxBandwidth,
+                                uint16_t               response,
+                                uint32_t               responseCode);
+
 
 /********* Server handling: send STUN BIND RESP *************/
   bool
@@ -35,6 +40,10 @@ extern "C" {
                                            const struct sockaddr* dstAddr,
                                            uint8_t reqTrnspCnt,
                                            uint8_t respTrnspCnt,
+                                           uint8_t                enf_flags,
+                                           uint8_t                enf_nodeCnt,
+                                           uint16_t               enf_upMaxBandwidth,
+                                           uint16_t               enf_downMaxBandwidth,
                                            void*                  userData,
                                            STUN_SENDFUNC sendFunc,
                                            int proto,

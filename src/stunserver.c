@@ -12,6 +12,10 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
                               const struct sockaddr* mappedSockAddr,
                               uint8_t                reqTrnspCnt,
                               uint8_t                respTrnspCnt,
+                              uint8_t                enf_flags,
+                              uint8_t                enf_nodeCnt,
+                              uint16_t               enf_upMaxBandwidth,
+                              uint16_t               enf_downMaxBandwidth,
                               uint16_t               response,
                               uint32_t               responseCode)
 {
@@ -63,6 +67,20 @@ CreateConnectivityBindingResp(StunMessage*           stunMsg,
   /* The XOR address MUST be added according to the RFC */
   stunMsg->hasXorMappedAddress = true;
   stunMsg->xorMappedAddress    = mappedAddr;
+
+
+  /* ENF */
+  if (enf_nodeCnt > 0)
+  {
+    stunMsg->hasEnfNetworkStatus = true;
+    memset( &stunMsg->enfNetworkStatus, 0,sizeof(StunAtrEnfNetworkStatus) );
+    stunMsg->hasEnfNetworkStatusResp = true;
+    stunMsg->enfNetworkStatusResp.flags            = enf_flags;
+    stunMsg->enfNetworkStatusResp.nodeCnt          = enf_nodeCnt;
+    stunMsg->enfNetworkStatusResp.tbd              = 0;
+    stunMsg->enfNetworkStatusResp.upMaxBandwidth   = enf_upMaxBandwidth;
+    stunMsg->enfNetworkStatusResp.downMaxBandwidth = enf_downMaxBandwidth;
+  }
 
   if (responseCode != 200)
   {
@@ -145,6 +163,10 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                        const struct sockaddr* dstAddr,
                                        uint8_t                reqTrnspCnt,
                                        uint8_t                respTrnspCnt,
+                                       uint8_t                enf_flags,
+                                       uint8_t                enf_nodeCnt,
+                                       uint16_t               enf_upMaxBandwidth,
+                                       uint16_t               enf_downMaxBandwidth,
                                        void*                  userData,
                                        STUN_SENDFUNC          sendFunc,
                                        int                    proto,
@@ -159,6 +181,10 @@ StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA*      clientData,
                                      mappedAddr,
                                      reqTrnspCnt,
                                      respTrnspCnt,
+                                     enf_flags,
+                                     enf_nodeCnt,
+                                     enf_upMaxBandwidth,
+                                     enf_downMaxBandwidth,
                                      (responseCode ==
                                       200) ? STUN_MSG_BindResponseMsg :
                                      STUN_MSG_BindErrorResponseMsg,
