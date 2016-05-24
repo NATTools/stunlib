@@ -209,6 +209,11 @@ BuildStunBindReq(STUN_TRANSACTION_DATA* trans,
     memcpy( &stunReqMsg->enfFlowDescription,
             &trans->stunBindReq.transAttr.enfFlowDescription,
             sizeof(StunAtrEnfFlowDescription) );
+
+    /* And add empty attribute after Integrity Attribute to carry Feedback */
+    /* from the network */
+    stunReqMsg->hasEnfNetworkStatus = true;
+    memset( &stunReqMsg->enfNetworkStatus, 0,sizeof(StunAtrEnfNetworkStatus) );
   }
 }
 
