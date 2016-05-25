@@ -3079,20 +3079,6 @@ stunlib_encodeMessage(StunMessage*   message,
     return 0;
   }
 
-
-  if ( message->hasEnfNetworkStatus &&
-       !stunEncodeEnfNetworkStatus(&message->enfNetworkStatus,
-                                   &pCurrPtr,
-                                   &restlen) )
-  {
-    if (stream)
-    {
-      printError(stream, "Invalid BandwidthUsage attribute\n");
-    }
-    return 0;
-  }
-
-
   if ( message->hasTTL && !stunEncodeTTL(&message->ttl,
                                          &pCurrPtr,
                                          &restlen) )
@@ -3160,7 +3146,7 @@ stunlib_encodeMessage(StunMessage*   message,
 
   }
 
-  /*DISCUSS NETWORK-STATUS Attribute is to be placed after integrity attribute*/
+  /*ENF NETWORK-STATUS Attribute is to be placed after integrity attribute*/
 
   if ( message->hasEnfNetworkStatus &&
        !stunEncodeEnfNetworkStatus(&message->enfNetworkStatus,
