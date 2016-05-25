@@ -59,22 +59,24 @@ typedef struct {
   struct sockaddr_storage serverAddr;
   struct sockaddr_storage baseAddr;
   bool                    useRelay;
-  char                    ufrag[300];       /* TBD  =  ICE_MAX_UFRAG_LENGTH*/
-  char                    password[300];    /* TBD = ICE_MAX_PASSWD_LENGTH*/
-  uint32_t                peerPriority;
-  bool                    useCandidate;
-  bool                    iceControlling;
-  uint64_t                tieBreaker;
-  uint32_t                proto;
-  uint8_t                 ttl;
-  StunMsgId               transactionId;
-  uint32_t                sockhandle;
-  STUN_SENDFUNC           sendFunc;
-  STUNCB                  stunCbFunc;
-  DiscussData*            discussData;    /*NULL allowed if none present */
-  bool                    addSoftware;
-  bool                    stuntrace;
-  bool                    addTransCnt;
+  /* char                    ufrag[300];       / * TBD  =
+   *  ICE_MAX_UFRAG_LENGTH* / */
+  /* char                    password[300];    / * TBD = ICE_MAX_PASSWD_LENGTH* / */
+  /* uint32_t                peerPriority; */
+  /* bool                    useCandidate; */
+  /* bool                    iceControlling; */
+  /* uint64_t                tieBreaker; */
+  uint32_t proto;
+  uint8_t  ttl;
+  /* StunMsgId               transactionId; */
+  /* uint32_t                sockhandle; */
+  TransactionAttributes transAttr;
+  STUN_SENDFUNC         sendFunc;
+  STUNCB                stunCbFunc;
+
+  bool addSoftware;
+  bool stuntrace;
+  bool addTransCnt;
 } StunBindReqStruct;
 
 struct StunClientStats
@@ -127,8 +129,7 @@ typedef struct
   /* uint32_t ttl; */
 
   /* DISCUSS */
-  bool        hasDiscuss;
-  DiscussData discussData;
+  bool hasDiscuss;
 
   struct StunClientStats stats;
   STUN_CLIENT_DATA*      client;

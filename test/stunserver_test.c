@@ -22,12 +22,10 @@ StunResult_T stunResult;
 struct sockaddr_storage stunServerAddr;
 struct sockaddr_storage mappedAddr;
 
-DiscussData discussData;
-
 STUN_CLIENT_DATA* stunInstance;
 #define STUN_TICK_INTERVAL_MS 50
 
-const char passwd[] ="testtest";
+const char passwd[] = "testtest";
 
 static void
 SendRawStun(void*                  ctx,
@@ -61,9 +59,9 @@ SendRawStun(void*                  ctx,
 
 CTEST(stunserver, Encode_decode)
 {
-  StunMessage            stunMsg;
-  StunMessage       stunResponse;
-  StunMsgId              stunId;
+  StunMessage stunMsg;
+  StunMessage stunResponse;
+  StunMsgId   stunId;
 
   uint8_t stunBuff[STUN_MAX_PACKET_SIZE];
   stunlib_createId(&stunId);
@@ -72,24 +70,27 @@ CTEST(stunserver, Encode_decode)
                            "193.200.93.152:3478" );
   CreateConnectivityBindingResp(&stunMsg,
                                 stunId,
-                                (struct sockaddr *)&mappedAddr,
+                                (struct sockaddr*)&mappedAddr,
                                 1,
                                 1,
+                                0,
+                                0,
+                                0,
+                                0,
                                 STUN_MSG_BindResponseMsg,
-                                200,
-                                NULL);
+                                200);
 
   int len = stunlib_encodeMessage(&stunMsg,
                                   (uint8_t*)stunBuff,
                                   STUN_MAX_PACKET_SIZE,
-                                  (unsigned char *) passwd,
+                                  (unsigned char*) passwd,
                                   strlen(passwd),
-                              NULL);
- ASSERT_TRUE(len == 72);
+                                  NULL);
+  ASSERT_TRUE( len == 72);
 
- ASSERT_TRUE( stunlib_DecodeMessage(stunBuff, len,
+  ASSERT_TRUE( stunlib_DecodeMessage(stunBuff, len,
                                      &stunResponse,
-                                    NULL, NULL /*stdout for debug*/));
+                                     NULL, NULL /*stdout for debug*/) );
 
 }
 
@@ -166,12 +167,15 @@ CTEST(stunserver, SendResp_Valid)
                                                        servAddr,
                                                        0,
                                                        0,
+                                                       0,
+                                                       0,
+                                                       0,
+                                                       0,
                                                        NULL,
                                                        SendRawStun,
                                                        0,
                                                        useRelay,
-                                                       0,  /* responseCode */
-                                                       NULL) );
+                                                       0) );
   sockaddr_initFromString( (struct sockaddr*)&mappedAddr,
                            "193.200.93.152:3478" );
   ASSERT_TRUE( StunServer_SendConnectivityBindingResp(stunInstance,
@@ -184,12 +188,15 @@ CTEST(stunserver, SendResp_Valid)
                                                       servAddr,
                                                       2,
                                                       3,
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0,
                                                       NULL,
                                                       SendRawStun,
                                                       0,
                                                       useRelay,
-                                                      0,
-                                                      NULL) );
+                                                      0) );
 
 }
 
@@ -197,8 +204,8 @@ CTEST(stunserver, SendResp_Valid_IPv6)
 {
   bool                    useRelay = false;
   struct sockaddr_storage mappedAddr,servAddr;
-  sockaddr_reset( &servAddr);
-  sockaddr_reset( &mappedAddr);
+  sockaddr_reset(&servAddr);
+  sockaddr_reset(&mappedAddr);
 
   sockaddr_initFromString( (struct sockaddr*)&servAddr,
                            "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234" );
@@ -214,12 +221,15 @@ CTEST(stunserver, SendResp_Valid_IPv6)
                                                        servAddr,
                                                        0,
                                                        0,
+                                                       0,
+                                                       0,
+                                                       0,
+                                                       0,
                                                        NULL,
                                                        SendRawStun,
                                                        0,
                                                        useRelay,
-                                                       0,  /* responseCode */
-                                                       NULL) );
+                                                       0) );
   sockaddr_initFromString( (struct sockaddr*)&mappedAddr,
                            "[2a02:fe0:c410:cb31:e4d:e93f:fecb:bf6b]:1234" );
   ASSERT_TRUE( StunServer_SendConnectivityBindingResp(stunInstance,
@@ -232,53 +242,14 @@ CTEST(stunserver, SendResp_Valid_IPv6)
                                                       servAddr,
                                                       0,
                                                       0,
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0,
                                                       NULL,
                                                       SendRawStun,
                                                       0,
                                                       useRelay,
-                                                      0,
-                                                      NULL) );
-
-}
-
-
-CTEST(stunserver, SendDiscussResp_Valid)
-{
-  bool useRelay = false;
-
-  discussData.streamType    = 0x004;
-  discussData.interactivity = 0x01;
-
-  discussData.networkStatus_flags            = 0;
-  discussData.networkStatus_nodeCnt          = 0;
-  discussData.networkStatus_tbd              = 0;
-  discussData.networkStatus_upMaxBandwidth   = 0;
-  discussData.networkStatus_downMaxBandwidth = 0;
-
-  sockaddr_initFromString( (struct sockaddr*)&stunServerAddr,
-                           "193.200.93.152:3478" );
-
-  StunClient_Alloc(&stunInstance);
-  ASSERT_TRUE( StunServer_SendConnectivityBindingResp(stunInstance,
-                                                       0,  /* sockhandle */
-                                                       LastTransId,
-                                                       "pem",
-                                                       (struct sockaddr*)&
-                                                       stunServerAddr,
-                                                       (struct sockaddr*)&
-                                                       stunServerAddr,
-                                                       2,
-                                                       2,
-                                                       NULL,
-                                                       SendRawStun,
-                                                       0,
-                                                       useRelay,
-                                                       0,  /* responseCode */
-                                                       &discussData) );
-
-}
-
-CTEST(stunserver, SendResp_InValid)
-{
+                                                      0) );
 
 }

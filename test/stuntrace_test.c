@@ -29,8 +29,8 @@ stundbg(void*              ctx,
   (void) category;
   (void) ctx;
   (void) errStr;
-//  strncpy(logStr, errStr, sizeof logStr);
-//  printf("%s\n", errStr);
+/*  strncpy(logStr, errStr, sizeof logStr); */
+/*  printf("%s\n", errStr); */
 }
 
 static void
@@ -582,13 +582,13 @@ CTEST(stuntrace, run_IPv4_Stunresp)
   ASSERT_TRUE(LastTTL == 40);
   sockaddr_initFromString( (struct sockaddr*)&hop1Addr,
                            "192.168.1.1:45674" );
-    StunClient_HandleICMP(clientData,
+  StunClient_HandleICMP(clientData,
                         (struct sockaddr*)&hop1Addr,
                         11);
   ASSERT_FALSE( sockaddr_alike( (struct sockaddr*)&LastHopAddr,
-                               (struct sockaddr*)&hop1Addr ) );
+                                (struct sockaddr*)&hop1Addr ) );
 
-  ASSERT_TRUE( LastTTL == 40);
+  ASSERT_TRUE(LastTTL == 40);
 
   sockaddr_initFromString( (struct sockaddr*)&hop2Addr,
                            "193.200.93.152:45674" );

@@ -40,7 +40,6 @@ static bool             runningAsIPv6;
 StunResult_T            stunResult;
 STUN_CLIENT_DATA*       stunInstance;
 struct sockaddr_storage stunServerAddr;
-DiscussData             discussData;
 
 
 char logStr[200];
@@ -49,6 +48,9 @@ int lastReqCnt;
 int lastTranspRespCnt;
 int lastTranspReqCnt;
 int lastRTT;
+
+uint8_t  lastEnfFlowType;
+uint16_t lastEnfFlowMaxBw;
 
 CTEST_DATA(data)
 {
@@ -62,10 +64,10 @@ StunStatusCallBack(void*               ctx,
                    StunCallBackData_T* retData)
 {
   (void)ctx;
-  stunResult = retData->stunResult;
+  stunResult        = retData->stunResult;
   lastTranspRespCnt = retData->respTransCnt;
-  lastTranspReqCnt = retData->reqTransCnt;
-  lastRTT = retData->rtt;
+  lastTranspReqCnt  = retData->reqTransCnt;
+  lastRTT           = retData->rtt;
   /* printf("Got STUN status callback\n");// (Result (%i)\n",
    * retData->stunResult); */
 }
@@ -107,14 +109,20 @@ SendRawStun(void*                  ctx,
 
   sockaddr_toString(addr, addr_str, SOCKADDR_MAX_STRLEN, true);
 
-  // And then we deencode to chek if correct values are set..
+  /* And then we deencode to chek if correct values are set.. */
   StunMessage stunMsg;
   stunlib_DecodeMessage(buf, len, &stunMsg, NULL,
-                                           NULL);
+                        NULL);
   lastReqCnt = 0;
-  if(stunMsg.hasTransCount){
+  if (stunMsg.hasTransCount)
+  {
     lastReqCnt = stunMsg.transCount.reqCnt;
-    //lastTranspRespCnt = stunMsg.transCount.respCnt;
+    /* lastTranspRespCnt = stunMsg.transCount.respCnt; */
+  }
+  if (stunMsg.hasEnfFlowDescription)
+  {
+    lastEnfFlowType  = stunMsg.enfFlowDescription.type;
+    lastEnfFlowMaxBw = stunMsg.enfFlowDescription.bandwidthMax;
   }
   /* printf("Sendto: '%s'\n", addr_str); */
 
@@ -128,7 +136,7 @@ stundbg(void*              ctx,
   (void) category;
   (void) ctx;
   strncpy(logStr, errStr, sizeof logStr);
-  //printf("%s\n", errStr);
+  /* printf("%s\n", errStr); */
 }
 
 static int
@@ -139,6 +147,16 @@ StartBindTransaction(int n)
   CurrAppCtx.a =  AppCtx[n].a = 100 + n;
   CurrAppCtx.b =  AppCtx[n].b = 200 + n;
 
+  TransactionAttributes transAttr;
+
+  transAttr.transactionId = LastTransId;
+  transAttr.sockhandle    = 0;
+  strncpy(transAttr.username, "pem", 4);
+  strncpy(transAttr.password, "pem", 4);
+  transAttr.peerPriority   = 34567;
+  transAttr.useCandidate   = false;
+  transAttr.iceControlling = false;
+  transAttr.tieBreaker     = 4567;
 
   /* kick off stun */
   return StunClient_startBindTransaction(stunInstance,
@@ -147,45 +165,33 @@ StartBindTransaction(int n)
                                          NULL,
                                          0,
                                          false,
-                                         "pem",
-                                         "pem",
-                                         34567,             /* uint32_t
-                                                             * 1845494271
-                                                             * (priority) */
-                                         false,
-                                         false,
-                                         4567,             /* uint64_t
-                                                            *
-                                                            *
-                                                            *
-                                                            *0x932FF9B151263B36LL
-                                                            * (tieBreaker) */
-                                         LastTransId,
-                                         0,             /* socket */
-                                         SendRawStun,   /* send func */
-                                         StunStatusCallBack,
-                                         NULL);
+                                         &transAttr,
+                                         SendRawStun,
+                                         StunStatusCallBack);
 }
 
 
 static int
-StartDiscussBindTransaction(int n)
+StartENFBindTransaction(int n)
 {
   n = 0;   /* hardcoded for now...  TODO: fixme */
 
   CurrAppCtx.a =  AppCtx[n].a = 100 + n;
   CurrAppCtx.b =  AppCtx[n].b = 200 + n;
 
-  discussData.streamType    = 0x004;
-  discussData.interactivity = 0x01;
+  TransactionAttributes transAttr;
+  transAttr.transactionId = LastTransId;
+  transAttr.sockhandle    = 0;
+  strncpy(transAttr.username, "pem", 4);
+  strncpy(transAttr.password, "pem", 4);
+  transAttr.peerPriority   = 34567;
+  transAttr.useCandidate   = false;
+  transAttr.iceControlling = false;
+  transAttr.tieBreaker     = 4567;
 
-  discussData.networkStatus_flags            = 0;
-  discussData.networkStatus_nodeCnt          = 0;
-  discussData.networkStatus_tbd              = 0;
-  discussData.networkStatus_upMaxBandwidth   = 0;
-  discussData.networkStatus_downMaxBandwidth = 0;
-
-
+  transAttr.addEnf                          = true;
+  transAttr.enfFlowDescription.type         = 0x04;
+  transAttr.enfFlowDescription.bandwidthMax = 4096;
 
   /* kick off stun */
   return StunClient_startBindTransaction(stunInstance,
@@ -194,20 +200,9 @@ StartDiscussBindTransaction(int n)
                                          NULL,
                                          0,
                                          false,
-                                         "pem",
-                                         "pem",
-                                         0,             /* uint32_t 1845494271
-                                                         * (priority) */
-                                         false,
-                                         false,
-                                         0,             /* uint64_t
-                                                         * 0x932FF9B151263B36LL
-                                                         * (tieBreaker) */
-                                         LastTransId,
-                                         0,             /* socket */
-                                         SendRawStun,   /* send func */
-                                         StunStatusCallBack,
-                                         &discussData);
+                                         &transAttr,
+                                         SendRawStun,
+                                         StunStatusCallBack);
 }
 
 static void
@@ -240,9 +235,9 @@ SimBindSuccessResp(bool IPv6,
     m.xorMappedAddress.addr.v4.addr = test_addr_ipv4;
     m.xorMappedAddress.addr.v4.port = test_port_ipv4;
   }
-  m.hasTransCount = true;
+  m.hasTransCount      = true;
   m.transCount.respCnt = 2;
-  m.transCount.reqCnt = lastReqCnt;
+  m.transCount.reqCnt  = lastReqCnt;
   StunClient_HandleIncResp(stunInstance, &m, NULL);
 
 }
@@ -334,8 +329,8 @@ CTEST(stunclient, logger)
 {
   StunClient_Alloc(&stunInstance);
   StunClient_RegisterLogger(stunInstance,
-                          stundbg,
-                          NULL);
+                            stundbg,
+                            NULL);
   StartBindTransaction(0);
   ASSERT_TRUE( 0 == strncmp("<STUNCLIENT:00>", logStr, 15) );
 
@@ -343,33 +338,28 @@ CTEST(stunclient, logger)
 
 CTEST(stunclient, bindtrans)
 {
-  int32_t ret = StunClient_startBindTransaction(NULL,
-                                                NULL,
-                                                (struct sockaddr*)&stunServerAddr,
-                                                NULL,
-                                                0,
-                                                false,
-                                                "pem",
-                                                "pem",
-                                                34567,
-                                                /* uint32_t
-                                                 * 1845494271
-                                                 * (priority) */
-                                                false,
-                                                false,
-                                                4567,
-                                                /* uint64_t
-                                                 *
-                                                 * 0x932FF9B151263B36LL
-                                                 * (tieBreaker) */
-                                                LastTransId,
-                                                0,
-                                                /* socket */
-                                                SendRawStun,
-                                                /* send func */
-                                                StunStatusCallBack,
-                                                NULL);
-  ASSERT_TRUE(ret == -1);
+  TransactionAttributes transAttr;
+
+  transAttr.transactionId = LastTransId;
+  transAttr.sockhandle    = 0;
+  strncpy(transAttr.username, "pem", 4);
+  strncpy(transAttr.password, "pem", 4);
+  transAttr.peerPriority   = 34567;
+  transAttr.useCandidate   = false;
+  transAttr.iceControlling = false;
+  transAttr.tieBreaker     = 4567;
+
+  /* kick off stun */
+  int32_t ret =  StunClient_startBindTransaction(stunInstance,
+                                                 NULL,
+                                                 (struct sockaddr*)&stunServerAddr,
+                                                 NULL,
+                                                 0,
+                                                 false,
+                                                 &transAttr,
+                                                 SendRawStun,
+                                                 StunStatusCallBack);
+  ASSERT_TRUE(ret == 0);
 
 }
 
@@ -516,13 +506,19 @@ CTEST(stunclient, DumpStats)
   StunClient_free(stunInstance);
 }
 
-CTEST(stunclient, Send_Discuss)
+CTEST(stunclient, Send_Enf)
 {
   StunClient_Alloc(&stunInstance);
+  StunClient_RegisterLogger(stunInstance,
+                            stundbg,
+                            NULL);
   sockaddr_initFromString( (struct sockaddr*)&stunServerAddr,
                            "193.200.93.152:3478" );
-  StartDiscussBindTransaction(0);
-  StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS);
+  StartENFBindTransaction(0);
+  /* StunClient_HandleTick(stunInstance, STUN_TICK_INTERVAL_MS); */
+  ASSERT_TRUE(lastEnfFlowType == 0x04);
+  ASSERT_TRUE(lastEnfFlowMaxBw == 4096);
+
 
   SimBindSuccessResp(runningAsIPv6, true);
   ASSERT_TRUE(stunResult == StunResult_BindOk);

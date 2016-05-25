@@ -108,7 +108,7 @@ struct TURN_INSTANCE_DATA
   TurnAllocateReqStuct turnAllocateReq;
   StunMsgId            StunReqTransId;                           /* transaction
                                                                   * id of
-                                                                  *request
+                                                                  * request
                                                                   **/
   StunMsgId PrevRespTransId;                                     /* transaction
                                                                   * id of last

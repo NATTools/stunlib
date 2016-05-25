@@ -17,14 +17,19 @@ extern "C" {
 #endif
 
   bool
-    CreateConnectivityBindingResp(StunMessage *           stunMsg,
-                                  StunMsgId transactionId,
-                                  const struct sockaddr* mappedSockAddr,
-                                  uint8_t reqTrnspCnt,
-                                  uint8_t respTrnspCnt,
-                                  uint16_t response,
-                                  uint32_t responseCode,
-                                  DiscussData *           discussData);
+  CreateConnectivityBindingResp(StunMessage*           stunMsg,
+                                StunMsgId              transactionId,
+                                const struct sockaddr* mappedSockAddr,
+                                uint8_t                reqTrnspCnt,
+                                uint8_t                respTrnspCnt,
+                                uint8_t                enf_flags,
+                                uint8_t                enf_nodeCnt,
+                                uint16_t               enf_upMaxBandwidth,
+                                uint16_t               enf_downMaxBandwidth,
+                                uint16_t               response,
+                                uint32_t               responseCode);
+
+
 /********* Server handling: send STUN BIND RESP *************/
   bool
     StunServer_SendConnectivityBindingResp(STUN_CLIENT_DATA *      clientData,
@@ -35,12 +40,15 @@ extern "C" {
                                            const struct sockaddr* dstAddr,
                                            uint8_t reqTrnspCnt,
                                            uint8_t respTrnspCnt,
+                                           uint8_t                enf_flags,
+                                           uint8_t                enf_nodeCnt,
+                                           uint16_t               enf_upMaxBandwidth,
+                                           uint16_t               enf_downMaxBandwidth,
                                            void*                  userData,
                                            STUN_SENDFUNC sendFunc,
                                            int proto,
                                            bool useRelay,
-                                           uint32_t responseCode,
-                                           DiscussData *           discussData);
+                                           uint32_t responseCode);
 
 /********** Server handling:  incoming STUN BIND REQ **********/
   bool

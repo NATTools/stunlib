@@ -902,55 +902,27 @@ CTEST(testvector, SendIndication)
 }
 
 
-CTEST(testvector, discuss_encode_decode)
+CTEST(testvector, enf_encode_decode)
 {
   FILE* file;
   file = fopen("test_vector.txt", "w+");
   StunMessage   stunMsg;
   unsigned char stunBuf[STUN_MAX_PACKET_SIZE];
-  DiscussData   discussData;
 
-  discussData.streamType    = 0x004;
-  discussData.interactivity = 0x01;
-
-  discussData.bandwidthUsage_average = 34;
-  discussData.bandwidthUsage_max     = 56;
-
-  discussData.networkStatus_flags            = 0;
-  discussData.networkStatus_nodeCnt          = 0;
-  discussData.networkStatus_tbd              = 0;
-  discussData.networkStatus_upMaxBandwidth   = 0;
-  discussData.networkStatus_downMaxBandwidth = 0;
 
   memset( &stunMsg, 0, sizeof(StunMessage) );
   stunMsg.msgHdr.msgType = STUN_MSG_AllocateRequestMsg;
   memcpy(&stunMsg.msgHdr.id.octet,&idOctet,12);
 
-  stunMsg.hasStreamType            = true;
-  stunMsg.streamType.type          = discussData.streamType;
-  stunMsg.streamType.interactivity = discussData.interactivity;
+  stunMsg.hasEnfFlowDescription           = true;
+  stunMsg.enfFlowDescription.type         = 4;
+  stunMsg.enfFlowDescription.bandwidthMax = 4096;
 
-  stunMsg.hasBandwidthUsage      = true;
-  stunMsg.bandwidthUsage.average = discussData.bandwidthUsage_average;
-  stunMsg.bandwidthUsage.max     = discussData.bandwidthUsage_max;
-
-
-
-  stunMsg.hasNetworkStatus               = true;
-  stunMsg.networkStatus.flags            = 0;
-  stunMsg.networkStatus.nodeCnt          = 0;
-  stunMsg.networkStatus.upMaxBandwidth   = 0;
-  stunMsg.networkStatus.downMaxBandwidth = 0;
-
-  stunMsg.hasNetworkStatusResp    = true;
-  stunMsg.networkStatusResp.flags =
-    discussData.networkStatusResp_flags;
-  stunMsg.networkStatusResp.nodeCnt =
-    discussData.networkStatusResp_nodeCnt;
-  stunMsg.networkStatusResp.upMaxBandwidth =
-    discussData.networkStatusResp_upMaxBandwidth;
-  stunMsg.networkStatusResp.downMaxBandwidth =
-    discussData.networkStatusResp_downMaxBandwidth;
+  stunMsg.hasEnfNetworkStatus               = true;
+  stunMsg.enfNetworkStatus.flags            = 0;
+  stunMsg.enfNetworkStatus.nodeCnt          = 0;
+  stunMsg.enfNetworkStatus.upMaxBandwidth   = 0;
+  stunMsg.enfNetworkStatus.downMaxBandwidth = 0;
 
   stunlib_encodeMessage(&stunMsg,
                         stunBuf,
@@ -972,88 +944,6 @@ CTEST(testvector, discuss_encode_decode)
                                        sizeof(password) ) );
 
 
-  ASSERT_TRUE(stunMsg.streamType.type == discussData.streamType);
-  ASSERT_TRUE(stunMsg.streamType.interactivity == discussData.interactivity);
-
-  ASSERT_TRUE(
-    stunMsg.bandwidthUsage.average == discussData.bandwidthUsage_average);
-  ASSERT_TRUE(stunMsg.bandwidthUsage.max == discussData.bandwidthUsage_max);
-
-  ASSERT_TRUE(
-    stunMsg.networkStatusResp.flags == discussData.networkStatusResp_flags);
-  ASSERT_TRUE(
-    stunMsg.networkStatusResp.nodeCnt == discussData.networkStatusResp_nodeCnt);
-  ASSERT_TRUE(
-    stunMsg.networkStatusResp.upMaxBandwidth ==
-    discussData.networkStatusResp_upMaxBandwidth);
-  ASSERT_TRUE(
-    stunMsg.networkStatusResp.downMaxBandwidth ==
-    discussData.networkStatusResp_downMaxBandwidth);
-  fclose(file);
-  remove("test_vector.txt");
-
-}
-
-
-
-CTEST(testvector, cisco_network_feedback_enc_dec)
-{
-  FILE* file;
-  file = fopen("test_vector.txt", "w+");
-  StunMessage   stunMsg;
-  unsigned char stunBuf[STUN_MAX_PACKET_SIZE];
-
-  uint32_t first_val  = 42;
-  uint32_t second_val = 0x0;
-  uint32_t third_val  = 5678923;
-
-
-  memset( &stunMsg, 0, sizeof(StunMessage) );
-  stunMsg.msgHdr.msgType = STUN_MSG_AllocateRequestMsg;
-  memcpy(&stunMsg.msgHdr.id.octet,&idOctet,12);
-
-  /* After Integrity attribute */
-  stunMsg.hasCiscoNetFeed     = true;
-  stunMsg.ciscoNetFeed.first  = first_val;
-  stunMsg.ciscoNetFeed.second = second_val;
-  stunMsg.ciscoNetFeed.third  = third_val;
-
-  /* This is Integrity protected */
-  stunMsg.hasCiscoNetFeedResp     = true;
-  stunMsg.ciscoNetFeedResp.first  = first_val;
-  stunMsg.ciscoNetFeedResp.second = second_val;
-  stunMsg.ciscoNetFeedResp.third  = third_val;
-
-  ASSERT_TRUE( stunlib_encodeMessage(&stunMsg,
-                                     stunBuf,
-                                     sizeof(stunBuf),
-                                     (unsigned char*)password,
-                                     strlen(password),
-                                     file) );
-
-  memset( &stunMsg, 0, sizeof(StunMessage) );
-
-  ASSERT_TRUE( stunlib_DecodeMessage(stunBuf,
-                                     sizeof(stunBuf),
-                                     &stunMsg,
-                                     NULL,
-                                     file) );
-
-  ASSERT_TRUE( stunlib_checkIntegrity( stunBuf,
-                                       sizeof(stunBuf),
-                                       &stunMsg,
-                                       (uint8_t*)password,
-                                       sizeof(password) ) );
-
-  ASSERT_TRUE(stunMsg.hasCiscoNetFeed);
-  ASSERT_TRUE(stunMsg.ciscoNetFeed.first == first_val);
-  ASSERT_TRUE(stunMsg.ciscoNetFeed.second == second_val);
-  ASSERT_TRUE(stunMsg.ciscoNetFeed.third == third_val);
-
-  ASSERT_TRUE(stunMsg.hasCiscoNetFeedResp);
-  ASSERT_TRUE(stunMsg.ciscoNetFeedResp.first == first_val);
-  ASSERT_TRUE(stunMsg.ciscoNetFeedResp.second == second_val);
-  ASSERT_TRUE(stunMsg.ciscoNetFeedResp.third == third_val);
   fclose(file);
   remove("test_vector.txt");
 

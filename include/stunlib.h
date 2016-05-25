@@ -84,16 +84,9 @@ extern "C" {
 /*Path Discovery test attribute */
 #define STUN_ATTR_PD                 0x8041
 
-/*DISCUSS Draft Attributes */
-#define STUN_ATTR_StreamType         0x8050
-#define STUN_ATTR_NetworkStatus      0x8051
-#define STUN_ATTR_BandwidthUsage     0x8052
-
-/* STUN CISCO Extensions */
-#define STUN_ATTR_Cisco_Network_Feedback 0xC001
-
-/* STUN CISCO Extensions */
-#define STUN_ATTR_Cisco_Network_Feedback 0xC001
+/*ENF Draft Attributes */
+#define STUN_ATTR_EnfFlowDescription  0xC001
+#define STUN_ATTR_EnfNetworkStatus    0xC002
 
 /*STUNTrace Attributes (Experimental) */
 #define STUN_ATTR_TTL                0x8055
@@ -188,6 +181,8 @@ extern "C" {
 #define STUNCLIENT_MAX_RETRANSMITS          9
 #define STUNCLIENT_RETRANSMIT_TIMEOUT_LIST      100, 200, 300, 400, 500, 500, \
   500, 500, 500                                                                              /*
+                                                                                              *
+                                                                                              *
                                                                                               *
                                                                                               *
                                                                                               *
@@ -350,11 +345,14 @@ StunAtrEvenPort;
 
 typedef struct
 {
-  uint16_t type;
-  uint8_t  interactivity;
+  /*4 bits*/
+  uint8_t type;
+  /*4 bits*/
+  uint8_t  tbd;
+  uint16_t bandwidthMax;
   uint8_t  pad;
 }
-StunAtrStreamType;
+StunAtrEnfFlowDescription;
 
 typedef struct
 {
@@ -364,7 +362,7 @@ typedef struct
   uint16_t upMaxBandwidth;
   uint16_t downMaxBandwidth;
 }
-StunAtrNetworkStatus;
+StunAtrEnfNetworkStatus;
 
 typedef struct
 {
@@ -373,14 +371,6 @@ typedef struct
   uint8_t  respCnt;
 }
 StunAtrTransCount;
-
-typedef struct
-{
-  uint32_t first;
-  uint32_t second;
-  uint32_t third;
-}
-StunAtrCiscoNetworkFeedback;
 
 typedef struct
 {
@@ -410,31 +400,27 @@ typedef struct
 
 
 
-
 typedef struct
 {
-  uint16_t streamType;
-  uint8_t  interactivity;
+  /* Core Values*/
+  StunMsgId transactionId;
+  uint32_t  sockhandle;
+  /* ICE Related */
+  char     username[STUN_MSG_MAX_USERNAME_LENGTH];
+  char     password[STUN_MSG_MAX_PASSWORD_LENGTH];
+  uint32_t peerPriority;
+  bool     useCandidate;
+  bool     iceControlling;
+  uint64_t tieBreaker;
+  /* ENF */
+  bool                      addEnf;
+  StunAtrEnfFlowDescription enfFlowDescription;
+  StunAtrEnfNetworkStatus   enfNetworkStatus;
+  StunAtrEnfNetworkStatus   enfNetworkStatusResp;
 
-  uint16_t bandwidthUsage_average;
-  uint16_t bandwidthUsage_max;
+  /* MISC */
 
-  uint8_t  networkStatus_flags;
-  uint8_t  networkStatus_nodeCnt;
-  uint16_t networkStatus_tbd;
-  uint16_t networkStatus_upMaxBandwidth;
-  uint16_t networkStatus_downMaxBandwidth;
-
-  /*Ugh, maybee own structs? Will be Integrity protected*/
-  uint8_t  networkStatusResp_flags;
-  uint8_t  networkStatusResp_nodeCnt;
-  uint16_t networkStatusResp_tbd;
-  uint16_t networkStatusResp_upMaxBandwidth;
-  uint16_t networkStatusResp_downMaxBandwidth;
-
-
-
-} DiscussData;
+} TransactionAttributes;
 
 
 /* Decoded  STUN message */
@@ -531,28 +517,19 @@ typedef struct
   bool               hasReservationToken;
   StunAtrDoubleValue reservationToken;
 
-  bool              hasStreamType;
-  StunAtrStreamType streamType;
-
-  bool                  hasBandwidthUsage;
-  StunAtrBandwidthUsage bandwidthUsage;
+  bool                      hasEnfFlowDescription;
+  StunAtrEnfFlowDescription enfFlowDescription;
 
   bool       hasTTL;
   StunAtrTTL ttl;
 
   /*After Integrity attr*/
-  bool                 hasNetworkStatus;
-  StunAtrNetworkStatus networkStatus;
-
-  bool                        hasCiscoNetFeed;
-  StunAtrCiscoNetworkFeedback ciscoNetFeed;
+  bool                    hasEnfNetworkStatus;
+  StunAtrEnfNetworkStatus enfNetworkStatus;
 
   /*Integrity protected*/
-  bool                 hasNetworkStatusResp;
-  StunAtrNetworkStatus networkStatusResp;
-
-  bool                        hasCiscoNetFeedResp;
-  StunAtrCiscoNetworkFeedback ciscoNetFeedResp;
+  bool                    hasEnfNetworkStatusResp;
+  StunAtrEnfNetworkStatus enfNetworkStatusResp;
 
   bool              hasTransCount;
   StunAtrTransCount transCount;

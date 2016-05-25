@@ -40,21 +40,22 @@ struct hiutPathElement {
 
 struct hiutResult {
   /* STUN Setup */
-  void*   stunCtx;
-  void*   userCtx;
-  int32_t sockfd;
-  char    username[STUN_MSG_MAX_USERNAME_LENGTH];
-  char    password[STUN_MSG_MAX_PASSWORD_LENGTH];
+  void*                 stunCtx;
+  void*                 userCtx;
+  TransactionAttributes transAttr;
+  /* int32_t sockfd; */
+  /* char    username[STUN_MSG_MAX_USERNAME_LENGTH]; */
+  /* char    password[STUN_MSG_MAX_PASSWORD_LENGTH]; */
 
   STUN_SENDFUNC sendFunc;
 
 
-  int32_t   currentTTL;
-  StunMsgId currStunMsgId;
-  int32_t   user_start_ttl;
-  int32_t   user_max_ttl;
-  int32_t   user_paralell_traces;
-  int32_t   path_max_ttl;               /*got port unreachable or STUN response
+  int32_t currentTTL;
+  /* StunMsgId currStunMsgId; */
+  int32_t user_start_ttl;
+  int32_t user_max_ttl;
+  int32_t user_paralell_traces;
+  int32_t path_max_ttl;                 /*got port unreachable or STUN response
                                         **/
   uint32_t                wait_ms;
   struct sockaddr_storage localAddr;

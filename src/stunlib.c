@@ -872,19 +872,20 @@ stunEncodeEvenPort(StunAtrEvenPort* pEvenPort,
 }
 
 static bool
-stunEncodeStreamType(StunAtrStreamType* pStreamType,
-                     uint8_t**          pBuf,
-                     int*               nBufLen)
+stunEncodeEnfFlowDescription(StunAtrEnfFlowDescription* pStreamType,
+                             uint8_t**                  pBuf,
+                             int*                       nBufLen)
 {
   if (*nBufLen < 24)
   {
     return false;
   }
-  write_16(pBuf, STUN_ATTR_StreamType);   /* Attr type */
-  write_16(pBuf, 3);                    /* Length */
-  write_16(pBuf, pStreamType->type);
-  write_8(pBuf, pStreamType->interactivity);
+  uint8_t typeAndTbd = pStreamType->type << 4;
+  write_16(pBuf, STUN_ATTR_EnfFlowDescription);   /* Attr type */
 
+  write_16(pBuf, 3);                    /* Length */
+  write_8(pBuf, typeAndTbd);
+  write_16(pBuf, pStreamType->bandwidthMax);
   write_8(pBuf, pStreamType->pad);
   *nBufLen -= 8;
   return true;
@@ -892,15 +893,15 @@ stunEncodeStreamType(StunAtrStreamType* pStreamType,
 
 
 static bool
-stunEncodeNetworkStatus(StunAtrNetworkStatus* pNetworkStatus,
-                        uint8_t**             pBuf,
-                        int*                  nBufLen)
+stunEncodeEnfNetworkStatus(StunAtrEnfNetworkStatus* pNetworkStatus,
+                           uint8_t**                pBuf,
+                           int*                     nBufLen)
 {
   if (*nBufLen < 32)
   {
     return false;
   }
-  write_16(pBuf, STUN_ATTR_NetworkStatus);   /* Attr type */
+  write_16(pBuf, STUN_ATTR_EnfNetworkStatus);   /* Attr type */
   write_16(pBuf, 8);                    /* Length */
   write_8(pBuf, pNetworkStatus->flags);
   write_8(pBuf, pNetworkStatus->nodeCnt);
@@ -950,7 +951,7 @@ stunEncodeTTL(StunAtrTTL* pTTL,
   return true;
 }
 
-
+#if 0
 static bool
 stunEncodeCiscoNetworkFeedback(StunAtrCiscoNetworkFeedback* ciscoNetFeed,
                                uint8_t**                    pBuf,
@@ -970,10 +971,11 @@ stunEncodeCiscoNetworkFeedback(StunAtrCiscoNetworkFeedback* ciscoNetFeed,
   return true;
 }
 
+
 static bool
-stunEncodeBandwidthUsage(StunAtrBandwidthUsage* pBandwidthUsage,
-                         uint8_t**              pBuf,
-                         int*                   nBufLen)
+encodeStunAtrBandwidthUsage* pBandwidthUsage,
+                           uint8_t**              pBuf,
+int*                   nBufLen)
 {
   if (*nBufLen < 4)
   {
@@ -987,6 +989,7 @@ stunEncodeBandwidthUsage(StunAtrBandwidthUsage* pBandwidthUsage,
   *nBufLen -= 8;
   return true;
 }
+#endif
 
 static uint32_t
 stunlib_EncodeIndication(uint8_t                msgType,
@@ -1507,30 +1510,30 @@ stunDecodeDataAtr(StunData*       pData,
   return true;
 }
 
+
 static bool
-stunDecodeStreamType(StunAtrStreamType* streamTypeAtr,
-                     const uint8_t**    pBuf,
-                     int*               nBufLen)
+stunDecodeEnfFlowDescription(StunAtrEnfFlowDescription* streamTypeAtr,
+                             const uint8_t**            pBuf,
+                             int*                       nBufLen)
 {
   if (*nBufLen < 4)
   {
     return false;
   }
-
-
-
-
-  read_16(pBuf, &streamTypeAtr->type);
-  read_8(pBuf, &streamTypeAtr->interactivity);
+  uint8_t typeAndTbd;
+  read_8(pBuf, &typeAndTbd);
+  streamTypeAtr->type = typeAndTbd >> 4;
+  read_16(pBuf, &streamTypeAtr->bandwidthMax);
   read_8(pBuf, &streamTypeAtr->pad);
   *nBufLen -= 4;
   return true;
 }
 
+
 static bool
-stunDecodeNetworkStatus(StunAtrNetworkStatus* networkStatusAtr,
-                        const uint8_t**       pBuf,
-                        int*                  nBufLen)
+stunDecodeEnfNetworkStatus(StunAtrEnfNetworkStatus* networkStatusAtr,
+                           const uint8_t**          pBuf,
+                           int*                     nBufLen)
 {
   if (*nBufLen < 4)
   {
@@ -1542,7 +1545,6 @@ stunDecodeNetworkStatus(StunAtrNetworkStatus* networkStatusAtr,
   read_16(pBuf, &networkStatusAtr->tbd);
   read_16(pBuf, &networkStatusAtr->upMaxBandwidth);
   read_16(pBuf, &networkStatusAtr->downMaxBandwidth);
-
 
   *nBufLen -= 8;
   return true;
@@ -1565,42 +1567,6 @@ stunDecodeTransCount(StunAtrTransCount* transCountAtr,
   return true;
 }
 
-
-
-static bool
-stunDecodeCiscoNetworkFeedback(StunAtrCiscoNetworkFeedback* ciscoNetFeed,
-                               const uint8_t**              pBuf,
-                               int*                         nBufLen)
-{
-  if (*nBufLen < 4)
-  {
-    return false;
-  }
-
-  read_32(pBuf, &ciscoNetFeed->first);
-  read_32(pBuf, &ciscoNetFeed->second);
-  read_32(pBuf, &ciscoNetFeed->third);
-
-  *nBufLen -= 12;
-  return true;
-}
-
-
-static bool
-stunDecodeBandwidthUsage(StunAtrBandwidthUsage* bandwidthUsageAtr,
-                         const uint8_t**        pBuf,
-                         int*                   nBufLen)
-{
-  if (*nBufLen < 1)
-  {
-    return false;
-  }
-  read_16(pBuf, &bandwidthUsageAtr->average);
-  read_16(pBuf, &bandwidthUsageAtr->max);
-
-  *nBufLen -= 4;
-  return true;
-}
 
 static bool
 stunDecodeTTL(StunAtrTTL*     ttl,
@@ -2425,7 +2391,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
       }
       message->hasTTL = true;
       break;
-
+#if 0
     case STUN_ATTR_StreamType:
       if ( !stunDecodeStreamType(&message->streamType,
                                  &pCurrPtr,
@@ -2435,16 +2401,17 @@ stunlib_DecodeMessage(const uint8_t*  buf,
       }
       message->hasStreamType = true;
       break;
-
-    case STUN_ATTR_BandwidthUsage:
-      if ( !stunDecodeBandwidthUsage(&message->bandwidthUsage,
-                                     &pCurrPtr,
-                                     &restlen) )
+#endif
+    case STUN_ATTR_EnfFlowDescription:
+      if ( !stunDecodeEnfFlowDescription(&message->enfFlowDescription,
+                                         &pCurrPtr,
+                                         &restlen) )
       {
         return false;
       }
-      message->hasBandwidthUsage = true;
+      message->hasEnfFlowDescription = true;
       break;
+
 
     case STUN_ATTR_TransCount:
       if ( !stunDecodeTransCount(&message->transCount,
@@ -2457,29 +2424,29 @@ stunlib_DecodeMessage(const uint8_t*  buf,
       break;
 
 
-    case STUN_ATTR_NetworkStatus:
+    case STUN_ATTR_EnfNetworkStatus:
       if (message->hasMessageIntegrity)
       {
-        if ( !stunDecodeNetworkStatus(&message->networkStatus,
-                                      &pCurrPtr,
-                                      &restlen) )
+        if ( !stunDecodeEnfNetworkStatus(&message->enfNetworkStatus,
+                                         &pCurrPtr,
+                                         &restlen) )
         {
           return false;
         }
-        message->hasNetworkStatus = true;
+        message->hasEnfNetworkStatus = true;
       }
       else
       {
-        if ( !stunDecodeNetworkStatus(&message->networkStatusResp,
-                                      &pCurrPtr,
-                                      &restlen) )
+        if ( !stunDecodeEnfNetworkStatus(&message->enfNetworkStatusResp,
+                                         &pCurrPtr,
+                                         &restlen) )
         {
           return false;
         }
-        message->hasNetworkStatusResp = true;
+        message->hasEnfNetworkStatusResp = true;
       }
       break;
-
+#if 0
     case STUN_ATTR_Cisco_Network_Feedback:
       if (message->hasMessageIntegrity)
       {
@@ -2502,7 +2469,7 @@ stunlib_DecodeMessage(const uint8_t*  buf,
         message->hasCiscoNetFeedResp = true;
       }
       break;
-
+#endif
     case STUN_ATTR_ICEControlling:
       if ( !stunDecodeDoubleValueAtr(&message->controlling,
                                      &pCurrPtr,
@@ -3100,9 +3067,10 @@ stunlib_encodeMessage(StunMessage*   message,
   }
 
 
-  if ( message->hasStreamType && !stunEncodeStreamType(&message->streamType,
-                                                       &pCurrPtr,
-                                                       &restlen) )
+  if ( message->hasEnfFlowDescription &&
+       !stunEncodeEnfFlowDescription(&message->enfFlowDescription,
+                                     &pCurrPtr,
+                                     &restlen) )
   {
     if (stream)
     {
@@ -3110,20 +3078,6 @@ stunlib_encodeMessage(StunMessage*   message,
     }
     return 0;
   }
-
-
-  if ( message->hasBandwidthUsage &&
-       !stunEncodeBandwidthUsage(&message->bandwidthUsage,
-                                 &pCurrPtr,
-                                 &restlen) )
-  {
-    if (stream)
-    {
-      printError(stream, "Invalid BandwidthUsage attribute\n");
-    }
-    return 0;
-  }
-
 
   if ( message->hasTTL && !stunEncodeTTL(&message->ttl,
                                          &pCurrPtr,
@@ -3136,26 +3090,14 @@ stunlib_encodeMessage(StunMessage*   message,
     return 0;
   }
 
-  if ( message->hasNetworkStatusResp &&
-       !stunEncodeNetworkStatus(&message->networkStatusResp,
-                                &pCurrPtr,
-                                &restlen) )
+  if ( message->hasEnfNetworkStatusResp &&
+       !stunEncodeEnfNetworkStatus(&message->enfNetworkStatusResp,
+                                   &pCurrPtr,
+                                   &restlen) )
   {
     if (stream)
     {
       printError(stream, "Invalid Network Status attribute\n");
-    }
-    return 0;
-  }
-
-  if ( message->hasCiscoNetFeedResp &&
-       !stunEncodeCiscoNetworkFeedback(&message->ciscoNetFeedResp,
-                                       &pCurrPtr,
-                                       &restlen) )
-  {
-    if (stream)
-    {
-      printError(stream, "Invalid Cisco Network Feedback attribute\n");
     }
     return 0;
   }
@@ -3204,12 +3146,12 @@ stunlib_encodeMessage(StunMessage*   message,
 
   }
 
-  /*DISCUSS NETWORK-STATUS Attribute is to be placed after integrity attribute*/
+  /*ENF NETWORK-STATUS Attribute is to be placed after integrity attribute*/
 
-  if ( message->hasNetworkStatus &&
-       !stunEncodeNetworkStatus(&message->networkStatus,
-                                &pCurrPtr,
-                                &restlen) )
+  if ( message->hasEnfNetworkStatus &&
+       !stunEncodeEnfNetworkStatus(&message->enfNetworkStatus,
+                                   &pCurrPtr,
+                                   &restlen) )
   {
     if (stream)
     {
@@ -3217,20 +3159,6 @@ stunlib_encodeMessage(StunMessage*   message,
     }
     return 0;
   }
-
-  if ( message->hasCiscoNetFeed &&
-       !stunEncodeCiscoNetworkFeedback(&message->ciscoNetFeed,
-                                       &pCurrPtr,
-                                       &restlen) )
-  {
-    if (stream)
-    {
-      printError(stream, "Invalid Cisco Network Feedback attribute\n");
-    }
-    return 0;
-  }
-
-
 
   msglen                    = bufLen - restlen;
   message->msgHdr.msgLength = msglen - STUN_HEADER_SIZE;
