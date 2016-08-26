@@ -80,6 +80,7 @@ extern "C" {
 #define STUN_ATTR_UnknownAttribute   0x000A
 #define STUN_ATTR_Software           0x8022
 #define STUN_ATTR_AlternateServer    0x8023
+#define STUN_ATTR_TransCount         0x8025
 
 /*Path Discovery test attribute */
 #define STUN_ATTR_PD                 0x8041
@@ -109,8 +110,6 @@ extern "C" {
 #define STUN_ATTR_ICEControlled      0x8029
 #define STUN_ATTR_ICEControlling     0x802A
 
-/* Draft loss and RTT calculation TODO:update actual calues*/
-#define STUN_ATTR_TransCount        0x8072
 
 /** IP Addr family **/
 #define STUN_ADDR_IPv4Family         0x01
