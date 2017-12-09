@@ -73,5 +73,7 @@ build
 *.pc
 .DS_Store
 
+# CLion
+.idea
 
 
