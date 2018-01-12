@@ -2,21 +2,7 @@
  *  See license file
  */
 #include "stunlib.h"
-#if defined(__APPLE__)
-#  define COMMON_DIGEST_FOR_OPENSSL
-#  include <CommonCrypto/CommonDigest.h>
-#  include <CommonCrypto/CommonHMAC.h>
-
-#  define SHA1 CC_SHA1
-#else
-
-#include <bsd/stdlib.h>
-#include <openssl/md5.h>
-#include <openssl/evp.h>
-#include <openssl/hmac.h>
-#endif
-
-
+#include "stun_crypto.h"
 
 #include <zlib.h>
 
@@ -2578,22 +2564,11 @@ stunlib_checkIntegrity(const uint8_t* buf,
     write_16(&pCurrPtr, msgIntLength);
     pCurrPtr = (uint8_t*)bufCopy;
 
-        #if defined(__APPLE__)
-    CCHmac(kCCHmacAlgSHA1,
-           integrityKey,
-           integrityKeyLen,
-           pCurrPtr,
-           message->messageIntegrity.offset,
-           &hash[0]);
-
-        #else
-    HMAC(EVP_sha1(),
-         integrityKey,
-         integrityKeyLen,
-         pCurrPtr,
-         message->messageIntegrity.offset,
-         &hash[0], &len);
-#endif
+    stunlib_util_sha1_hmac(integrityKey,
+                           (size_t) integrityKeyLen,
+                           pCurrPtr,
+                           message->messageIntegrity.offset,
+                           &hash[0], &len);
     if (memcmp(&hash, message->messageIntegrity.hash,20) != 0)
     {
       /*
@@ -3171,20 +3146,11 @@ stunlib_encodeMessage(StunMessage*   message,
     (void)length;
     /*calculate and insert integrity hash*/
     pCurrPtr = (uint8_t*)buf;
-#if defined(__APPLE__)
-    CCHmac(kCCHmacAlgSHA1,
-           md5key, keyLen,
-           pCurrPtr,     /*stunmsg string*/
-           message->messageIntegrity.offset,
-           &message->messageIntegrity.hash[0]);
-#else
-    length = 0;
-    HMAC(EVP_sha1(),
-         md5key, keyLen,
-         pCurrPtr,     /*stunmsg string*/
-         message->messageIntegrity.offset,
-         &message->messageIntegrity.hash[0], &length);
-#endif
+    stunlib_util_sha1_hmac(md5key, keyLen,
+                           pCurrPtr,
+                           message->messageIntegrity.offset,
+                           &message->messageIntegrity.hash[0], &length);
+
     pCurrPtr = (uint8_t*)buf + message->messageIntegrity.offset;
     if ( !stunEncodeIntegrityAtr(&message->messageIntegrity, &pCurrPtr,
                                  &restlen, bufLen) )
@@ -3393,7 +3359,7 @@ stunlib_transIdIsEqual(const StunMsgId* a,
 void
 stunlib_createId(StunMsgId* pId)
 {
-  arc4random_buf(pId, STUN_MSG_ID_SIZE);
+    stunlib_util_random(pId, STUN_MSG_ID_SIZE);
 }
 
 
@@ -3428,7 +3394,7 @@ uint32_t
 stunlib_calculateFingerprint(const uint8_t* buf,
                              size_t         len)
 {
-  return crc32(0L, buf, len) ^ 0x5354554e;
+  return stunlib_util_crc32(0L, buf, len) ^ 0x5354554e;
 }
 
 
@@ -3473,9 +3439,5 @@ stunlib_createMD5Key(unsigned char* md5key,
   {
     abort();
   }
-#if defined(__APPLE__)
-  CC_MD5( (uint8_t*)keyStr, bytes_written, md5key );
-#else
-  MD5( (uint8_t*)keyStr, bytes_written, md5key );
-#endif
+  stunlib_util_md5((uint8_t*)keyStr, (size_t) bytes_written, md5key );
 }

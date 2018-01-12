@@ -8,6 +8,7 @@ set ( stunlib_srcs
       stunlib.c
       turnclient.c
       stuntrace.c
+      stun_crypto.c
 )
 
 set (ADDITIONAL_LIBS "")
@@ -24,10 +25,11 @@ install ( TARGETS stunlib
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
-find_package( ZLIB REQUIRED )
+find_package( ZLIB )
 if ( ZLIB_FOUND )
     include_directories( ${ZLIB_INCLUDE_DIRS} )
     list(APPEND ADDITIONAL_LIBS ${ZLIB_LIBRARIES})
+    add_definitions(-DSTUNLIB_USE_ZLIB)
 endif( ZLIB_FOUND )
 
 
@@ -35,11 +37,13 @@ find_package( OpenSSL )
 if( OPENSSL_FOUND )
   include_directories( ${OPENSSL_INCLUDE_DIR} )
   list(APPEND ADDITIONAL_LIBS ${OPENSSL_LIBRARIES})
+  add_definitions(-DSTUNLIB_USE_OPENSSL)
 endif( OPENSSL_FOUND )
 
 # Todo fix propper library discovery.
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
    list(APPEND ADDITIONAL_LIBS "bsd")
+   add_definitions(-DSTUNLIB_USE_BSD)
 endif()
 
 target_link_libraries ( stunlib PRIVATE sockaddrutil
