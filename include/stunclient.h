@@ -16,10 +16,6 @@ extern "C" {
 #include <stdbool.h>
 #endif
 
-#define MAX_STUN_TRANSACTIONS  60
-#define SoftwareVersionStr "Cisco"
-
-
 /* forward declarations */
 struct STUN_CLIENT_DATA;
 typedef struct STUN_CLIENT_DATA STUN_CLIENT_DATA;

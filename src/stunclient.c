@@ -191,7 +191,7 @@ BuildStunBindReq(STUN_TRANSACTION_DATA* trans,
 
   if (trans->stunBindReq.addSoftware)
   {
-    stunlib_addSoftware(stunReqMsg, SoftwareVersionStr, STUN_DFLT_PAD);
+    stunlib_addSoftware(stunReqMsg, STUN_SOFTWARE_NAME, STUN_DFLT_PAD);
   }
 
   if (trans->stunBindReq.addTransCnt)
@@ -246,7 +246,7 @@ StunClient_Alloc(STUN_CLIENT_DATA** clientDataPtr)
 
   StunClient_clearStats(clientData);
 
-  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < STUN_MAX_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     trans->inst   = i;
@@ -292,7 +292,7 @@ StunClient_HandleTick(STUN_CLIENT_DATA* clientData,
   }
 
   /* call fsm for each timer that has expired */
-  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < STUN_MAX_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse && TimerHasExpired(trans, TimerResMsec) )
@@ -392,7 +392,7 @@ StunClient_HandleIncResp(STUN_CLIENT_DATA*      clientData,
     return;
   }
 
-  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < STUN_MAX_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
@@ -443,7 +443,7 @@ StunClient_HandleICMP(STUN_CLIENT_DATA*      clientData,
   if ( isTimeExceeded(ICMPtype, srcAddr->sa_family) ||
        isDstUnreachable(ICMPtype,srcAddr->sa_family) )
   {
-    for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+    for (int i = 0; i < STUN_MAX_TRANSACTIONS; i++)
     {
       STUN_TRANSACTION_DATA* trans = &clientData->data[i];
       if ( trans->inUse &&
@@ -489,7 +489,7 @@ StunClient_cancelBindingTransaction(STUN_CLIENT_DATA* clientData,
     return STUNCLIENT_CTX_UNKNOWN;
   }
 
-  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < STUN_MAX_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if ( trans->inUse &&
@@ -553,7 +553,7 @@ AllocFreeInst(STUN_CLIENT_DATA* clientData,
   (void) payload;
   int i;
 
-  for (i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (i = 0; i < STUN_MAX_TRANSACTIONS; i++)
   {
     STUN_TRANSACTION_DATA* trans = &clientData->data[i];
     if (!trans->inUse)
@@ -684,7 +684,7 @@ StunClientMain(STUN_CLIENT_DATA* clientData,
   /* if  context is already known, just call the  fsm */
   if (ctx != STUNCLIENT_CTX_UNKNOWN)
   {
-    if (ctx < MAX_STUN_TRANSACTIONS)
+    if (ctx < STUN_MAX_TRANSACTIONS)
     {
       StunClientFsm(&clientData->data[ctx], sig, payload);
     }
@@ -696,7 +696,7 @@ StunClientMain(STUN_CLIENT_DATA* clientData,
                 "<STUNCLIENT> sig: %s illegal context %d exceeds %d\n ",
                 StunsigToStr(sig),
                 ctx,
-                MAX_STUN_TRANSACTIONS);
+                STUN_MAX_TRANSACTIONS);
     }
   }
   else if (sig == STUN_SIGNAL_BindReq)
@@ -1377,7 +1377,7 @@ StunClient_clearStats(STUN_CLIENT_DATA* clientData)
 
   memset(&clientData->stats, 0, sizeof clientData->stats);
 
-  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < STUN_MAX_TRANSACTIONS; i++)
   {
     memset( &clientData->data[i].stats, 0, sizeof (struct StunClientStats) );
   }
@@ -1410,7 +1410,7 @@ StunClient_dumpStats (STUN_CLIENT_DATA*  clientData,
   stats.Retransmits                  += ptr->Retransmits;
   stats.Failures                     += ptr->Failures;
 
-  for (int i = 0; i < MAX_STUN_TRANSACTIONS; i++)
+  for (int i = 0; i < STUN_MAX_TRANSACTIONS; i++)
   {
     ptr = &clientData->data[i].stats;
 

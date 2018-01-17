@@ -68,5 +68,7 @@
 
 #define STUN_DFLT_PAD ' '             /* default padding char */
 
+#define STUN_MAX_TRANSACTIONS  60
+#define STUN_SOFTWARE_NAME "Cisco"
 
 #endif //STUNLIB_STUNLIB_CONFIG_H

@@ -140,7 +140,7 @@ typedef struct
 struct STUN_CLIENT_DATA
 {
   void*                 userCtx;
-  STUN_TRANSACTION_DATA data [MAX_STUN_TRANSACTIONS];
+  STUN_TRANSACTION_DATA data [STUN_MAX_TRANSACTIONS];
 
 
   /*duplicated for logging on unknown transactions etc.*/
