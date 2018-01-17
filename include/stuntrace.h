@@ -79,11 +79,11 @@ struct hiutResult {
 
 bool
 isDstUnreachable(const int32_t   ICMPtype,
-                 const u_int16_t addrFamily);
+                 const uint16_t addrFamily);
 
 bool
 isTimeExceeded(const int32_t   ICMPtype,
-               const u_int16_t addrFamily);
+               const uint16_t addrFamily);
 
 int
 StunTrace_startTrace(STUN_CLIENT_DATA*      clientData,
