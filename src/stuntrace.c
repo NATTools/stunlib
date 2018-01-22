@@ -14,7 +14,7 @@ StunStatusCallBack(void*               userCtx,
 
 bool
 isDstUnreachable(const int32_t   ICMPtype,
-                 const u_int16_t addrFamily)
+                 const uint16_t addrFamily)
 {
   if ( ( (ICMPtype == 3) && (addrFamily == AF_INET) )  ||
        ( (ICMPtype == 1) && (addrFamily == AF_INET6) ) )
@@ -26,7 +26,7 @@ isDstUnreachable(const int32_t   ICMPtype,
 
 bool
 isTimeExceeded(const int32_t   ICMPtype,
-               const u_int16_t addrFamily)
+               const uint16_t addrFamily)
 {
   if ( ( (ICMPtype == 11) && (addrFamily == AF_INET) )  ||
        ( (ICMPtype == 3) && (addrFamily == AF_INET6) ) )
