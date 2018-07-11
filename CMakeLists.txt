@@ -9,7 +9,7 @@ include ( Uncrustify )
 include ( GetGitRevisionDescription )
 git_describe(VERSION --tags --dirty=-d)
 
-string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" STUNLIBL_VERSION_MAJOR "${VERSION}")
+string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" STUNLIB_VERSION_MAJOR "${VERSION}")
 string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" STUNLIB_VERSION_MINOR "${VERSION}")
 string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" STUNLIB_VERSION_PATCH "${VERSION}")
 string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+(.*)" "\\1" STUNLIB_VERSION_SHA1 "${VERSION}")
@@ -128,20 +128,20 @@ UncrustifyTop(${uncrustify})
 if (build_docs)
     if(NOT DOXYGEN_FOUND)
         message(FATAL_ERROR "Doxygen is needed to build the documentation.")
+    else()
+        set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+        set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+        configure_file(${doxyfile_in} ${doxyfile} @ONLY)
+
+        add_custom_target(doc
+            COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation wit1h Doxygen"
+            VERBATIM)
+
+        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
     endif()
-
-    set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-    set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-
-    configure_file(${doxyfile_in} ${doxyfile} @ONLY)
-
-    add_custom_target(doc
-        COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating API documentation wit1h Doxygen"
-        VERBATIM)
-
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
 endif()
 
 

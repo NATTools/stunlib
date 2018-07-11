@@ -20,7 +20,7 @@ sa_test ( turnmessage )
 sa_test ( stunserver )
 sa_test ( turnclient )
 sa_test ( stuntrace )
-
+sa_test ( crypto )
 
 
 include ( CTest )
