@@ -3,9 +3,6 @@
  */
 #include "stunlib.h"
 #include "stun_crypto.h"
-
-#include <zlib.h>
-
 #include <stdlib.h>
 #include <string.h>
 
