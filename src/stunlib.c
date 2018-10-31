@@ -2553,6 +2553,10 @@ stunlib_checkIntegrity(const uint8_t* buf,
       msgIntLength =  msgIntLength - 8;
     }
 
+    if (bufLen > STUN_MAX_PACKET_SIZE)
+    {
+      return false;
+    }
     memcpy(&bufCopy, buf, bufLen);
 
     /*Write new packet length in header*/
